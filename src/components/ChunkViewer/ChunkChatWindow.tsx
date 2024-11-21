@@ -8,6 +8,7 @@ import { X, MessageCircle, Send, Maximize2, Minimize2, Bot, User, Loader2 } from
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { api } from '@/lib/api';
+import QuestionLoader from '@/components/ui/QuestionLoader';
 
 interface ChunkChatWindowProps {
   chunkId: string;
@@ -24,6 +25,11 @@ export default function ChunkChatWindow({ chunkId, conversation, onClose }: Chun
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [localMessages, setLocalMessages] = useState<Message[]>(conversation.messages || []);
+  const [questions, setQuestions] = useState<string[]>([]);
+  const [questionsLoading, setQuestionsLoading] = useState(false);
+  const [size, setSize] = useState({ width: isExpanded ? 600 : 400, height: isExpanded ? window.innerHeight * 0.8 : 400 });
+  const isResizing = useRef(false);
+  const resizeDirection = useRef<string>('');
   const windowRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -47,6 +53,40 @@ export default function ChunkChatWindow({ chunkId, conversation, onClose }: Chun
     }
   }, [conversation.messages]);
 
+  useEffect(() => {
+    setSize({
+      width: isExpanded ? 600 : 400,
+      height: isExpanded ? window.innerHeight * 0.8 : 400
+    });
+  }, [isExpanded]);
+
+  useEffect(() => {
+    const generateInitialQuestions = async () => {
+      if (!questions.length && conversation.id) {
+        try {
+          setQuestionsLoading(true);
+          const response = await api.generateQuestions(conversation.id);
+          setQuestions(response);
+        } catch (error) {
+          console.error('Error generating questions:', error);
+        } finally {
+          setQuestionsLoading(false);
+        }
+      }
+    };
+
+    generateInitialQuestions();
+  }, [conversation.id, questions.length]);
+
+  useEffect(() => {
+  return () => {
+    if (isResizing.current) {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    }
+  };
+}, []);
+
   const handleMouseDown = (e: React.MouseEvent) => {
     if (windowRef.current) {
       const rect = windowRef.current.getBoundingClientRect();
@@ -56,6 +96,59 @@ export default function ChunkChatWindow({ chunkId, conversation, onClose }: Chun
       });
       setIsDragging(true);
     }
+  };
+
+  const handleResize = (e: React.MouseEvent, direction: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    isResizing.current = true;
+    resizeDirection.current = direction;
+  
+    const startSize = { ...size };
+    const startPosition = { x: conversation.position?.x || 0, y: conversation.position?.y || 0 };
+    const startMousePosition = { x: e.clientX, y: e.clientY };
+  
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing.current) return;
+  
+      const dx = e.clientX - startMousePosition.x;
+      const dy = e.clientY - startMousePosition.y;
+      const newSize = { ...startSize };
+      const newPosition = { ...startPosition };
+  
+      if (direction.includes('e')) {
+        newSize.width = Math.max(300, startSize.width + dx);
+      }
+      if (direction.includes('w')) {
+        const newWidth = Math.max(300, startSize.width - dx);
+        if (newWidth !== size.width) {
+          newSize.width = newWidth;
+          newPosition.x = startPosition.x + dx;
+        }
+      }
+      if (direction.includes('s')) {
+        newSize.height = Math.max(200, startSize.height + dy);
+      }
+      if (direction.includes('n')) {
+        const newHeight = Math.max(200, startSize.height - dy);
+        if (newHeight !== size.height) {
+          newSize.height = newHeight;
+          newPosition.y = startPosition.y + dy;
+        }
+      }
+  
+      setSize(newSize);
+      updateConversationPosition(chunkId, conversation.id, newPosition);
+    };
+  
+    const handleMouseUp = () => {
+      isResizing.current = false;
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -102,6 +195,39 @@ export default function ChunkChatWindow({ chunkId, conversation, onClose }: Chun
     }
   };
 
+  const handleQuestionClick = async (question: string) => {
+    if (loading) return;
+    setInput('');
+    
+    const userMessage: Message = {
+      id: crypto.randomUUID(),
+      content: question,
+      role: 'user',
+      timestamp: new Date().toISOString()
+    };
+    
+    try {
+      setLoading(true);
+      setError(null);
+      setLocalMessages(prev => [...prev, userMessage]);
+      
+      await sendMessage(conversation.id, question);
+      
+      // Generate new questions based on the latest context
+      setQuestionsLoading(true);
+      const newQuestions = await api.generateQuestions(conversation.id);
+      setQuestions(newQuestions);
+      
+    } catch (error) {
+      setError('Failed to send message. Please try again.');
+      console.error('Error sending message:', error);
+      setLocalMessages(prev => prev.filter(msg => msg.id !== userMessage.id));
+    } finally {
+      setLoading(false);
+      setQuestionsLoading(false);
+    }
+  };
+
   return (
     <motion.div
       ref={windowRef}
@@ -111,6 +237,8 @@ export default function ChunkChatWindow({ chunkId, conversation, onClose }: Chun
       style={{
         left: conversation.position?.x,
         top: conversation.position?.y,
+        width: size.width,
+        height: size.height,
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -119,7 +247,6 @@ export default function ChunkChatWindow({ chunkId, conversation, onClose }: Chun
       className={cn(
         "fixed bg-gray-900/95 backdrop-blur-sm rounded-lg shadow-2xl flex flex-col z-50",
         "border border-gray-800",
-        isExpanded ? "w-[600px] h-[80vh]" : "w-[400px] h-[400px]",
         isDragging && "cursor-grabbing"
       )}
     >
@@ -145,6 +272,37 @@ export default function ChunkChatWindow({ chunkId, conversation, onClose }: Chun
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <AnimatePresence mode="wait">
+          {questionsLoading ? (
+            <QuestionLoader />
+          ) : questions.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="space-y-2 mb-4"
+            >
+              <h3 className="text-sm font-medium text-gray-300">Suggested Questions</h3>
+              <div className="grid gap-2">
+                {questions.map((question, index) => (
+                  <motion.button
+                    key={question}
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: index * 0.1 }}
+                    onClick={() => handleQuestionClick(question)}
+                    className="w-full text-left p-2 bg-gray-800/50 hover:bg-gray-700/50 
+                             rounded-lg text-sm text-gray-300 transition-colors"
+                    disabled={loading}
+                  >
+                    {question}
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {localMessages.map((message) => (
           <div
             key={message.id}
@@ -232,6 +390,50 @@ export default function ChunkChatWindow({ chunkId, conversation, onClose }: Chun
           <p className="mt-2 text-sm text-red-400">{error}</p>
         )}
       </div>
+      <div className="absolute inset-0 pointer-events-none">
+      <div className="absolute inset-0 border border-gray-600 rounded-lg">
+        {/* Corner resize handles */}
+        {['nw', 'ne', 'sw', 'se'].map((direction) => (
+          <div
+            key={direction}
+            className={`absolute w-3 h-3 cursor-${direction}-resize pointer-events-auto
+              ${direction.includes('n') ? 'top-0' : 'bottom-0'}
+              ${direction.includes('w') ? 'left-0' : 'right-0'}
+              group`}
+            onMouseDown={(e) => handleResize(e, direction)}
+          >
+            <div className="absolute inset-0 m-0.5 rounded-sm bg-gray-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+        ))}
+        
+        {/* Edge resize handles */}
+        {[
+          { dir: 'n', class: 'top-0 left-1/2 -translate-x-1/2' },
+          { dir: 's', class: 'bottom-0 left-1/2 -translate-x-1/2' },
+          { dir: 'w', class: 'left-0 top-1/2 -translate-y-1/2' },
+          { dir: 'e', class: 'right-0 top-1/2 -translate-y-1/2' }
+        ].map(({ dir, class: positionClass }) => (
+          <div
+            key={dir}
+            className={`absolute w-2 h-2 cursor-${dir}-resize pointer-events-auto ${positionClass} group`}
+            onMouseDown={(e) => handleResize(e, dir)}
+          >
+            <div className="absolute inset-0 m-0.5 rounded-sm bg-gray-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+        ))}
+      </div>
+    </div>
+
+    {/* Resize indicator */}
+    <div className="absolute bottom-1 right-1 pointer-events-none text-gray-600 opacity-50">
+      <svg 
+        className="w-4 h-4" 
+        viewBox="0 0 24 24" 
+        fill="currentColor"
+      >
+        <path d="M16 16v4l4-4h-4zm0-8v4l4-4h-4zm-8 8v4l4-4h-4z" />
+      </svg>
+    </div>
     </motion.div>
   );
 }

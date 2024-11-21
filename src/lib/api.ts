@@ -144,4 +144,21 @@ export const api = {
       throw error;
     }
   },
+
+  generateQuestions: async (conversationId: string, count: number = 3): Promise<string[]> => {
+    const response = await fetch(`${API_URL}/conversations/${conversationId}/questions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        count,
+        previous_questions: []
+      })
+    });
+    if (!response.ok) {
+      throw new Error('Failed to generate questions');
+    }
+    return response.json();
+  },
 };
