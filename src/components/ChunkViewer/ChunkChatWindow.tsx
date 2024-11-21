@@ -79,13 +79,24 @@ export default function ChunkChatWindow({ chunkId, conversation, onClose }: Chun
   }, [conversation.id, questions.length]);
 
   useEffect(() => {
-  return () => {
-    if (isResizing.current) {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+    return () => {
+      if (isResizing.current) {
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (conversation.messages) {
+      setLocalMessages(conversation.messages);
     }
-  };
-}, []);
+  }, [conversation.messages]);
+
+  useEffect(() => {
+    console.log('Local Messages:', localMessages);
+    console.log('Conversation Messages:', conversation.messages);
+  }, [localMessages, conversation.messages]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (windowRef.current) {
@@ -182,8 +193,13 @@ export default function ChunkChatWindow({ chunkId, conversation, onClose }: Chun
       // Update local state immediately for responsive UI
       setLocalMessages(prev => [...prev, userMessage]);
       
-      // Use context's sendMessage to maintain global state
-      await sendMessage(conversation.id, trimmedInput);
+      // Send message and wait for response
+      const response = await sendMessage(conversation.id, trimmedInput);
+      
+      // Update local messages with AI response if needed
+      if (!conversation.messages?.some(m => m.id === userMessage.id)) {
+        setLocalMessages(prev => [...prev.filter(m => m.id !== userMessage.id), userMessage]);
+      }
       
     } catch (error) {
       setError('Failed to send message. Please try again.');
