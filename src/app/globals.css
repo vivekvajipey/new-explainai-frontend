@@ -2,20 +2,113 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+    
+    --radius: 0.5rem;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .document-pane {
+    @apply flex-1 flex flex-col bg-gray-900 border-r border-gray-800;
+  }
+
+  .chat-pane {
+    @apply w-[400px] flex flex-col bg-gray-900 border-l border-gray-800;
+  }
+
+  .split-pane-container {
+    @apply flex h-screen overflow-hidden;
+  }
+
+  .nav-button {
+    @apply flex items-center px-3 py-1.5 text-sm font-medium text-gray-400 
+           hover:text-white hover:bg-gray-800 rounded-md transition-colors
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .message-bubble {
+    @apply p-4 rounded-lg max-w-[85%] shadow-lg;
+  }
+
+  .message-bubble-user {
+    @apply bg-purple-600 ml-auto;
+  }
+
+  .message-bubble-assistant {
+    @apply bg-gray-800;
+  }
+
+  .input-container {
+    @apply flex gap-2 p-4 bg-gray-900 border-t border-gray-800;
+  }
+
+  .chat-input {
+    @apply flex-1 bg-gray-800 text-white rounded-lg px-4 py-2
+           placeholder-gray-400 focus:outline-none focus:ring-2 
+           focus:ring-purple-500 transition-all;
+  }
+
+  .send-button {
+    @apply px-4 py-2 bg-purple-600 text-white rounded-lg
+           hover:bg-purple-500 transition-colors
+           disabled:opacity-50 disabled:cursor-not-allowed
+           flex items-center gap-2;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgb(17, 17, 17);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(64, 64, 64);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(96, 96, 96);
 }
