@@ -2,12 +2,27 @@
 
 import { useEffect, useState, use } from 'react';
 import { DocumentWebSocket } from '@/lib/api';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
+interface DocumentChunk {
+  id: string;
+  sequence: number;
+  content: string;
+  meta_data: {
+    length: number;
+    index: number;
+  };
+}
 
 interface DocumentMetadata {
   title: string;
   pages: number;
   text: string;
   content?: string;
+  chunks: DocumentChunk[];
+  meta_data: {
+    chunks_count: number;
+  };
 }
 
 export default function DocumentPage({ params }: { params: Promise<{ id: string }> }) {
@@ -16,6 +31,7 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
+  const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
 
   useEffect(() => {
     let websocket: DocumentWebSocket | null = null;
@@ -71,6 +87,18 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
     setRetryCount(prev => prev + 1);
   };
 
+  const handlePreviousChunk = () => {
+    if (currentChunkIndex > 0) {
+      setCurrentChunkIndex(prev => prev - 1);
+    }
+  };
+
+  const handleNextChunk = () => {
+    if (metadata && currentChunkIndex < metadata.chunks.length - 1) {
+      setCurrentChunkIndex(prev => prev + 1);
+    }
+  };
+
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
@@ -101,21 +129,47 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
     );
   }
 
+  const currentChunk = metadata.chunks[currentChunkIndex];
+
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">{metadata.title}</h1>
-        {metadata.pages && (
+        <div className="flex items-center justify-between">
           <p className="text-earth-600 dark:text-earth-300">
-            {metadata.pages} pages
+            {metadata.pages} pages • Chunk {currentChunkIndex + 1} of {metadata.chunks.length}
           </p>
-        )}
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handlePreviousChunk}
+              disabled={currentChunkIndex === 0}
+              className={`p-2 rounded-lg ${
+                currentChunkIndex === 0
+                  ? 'text-earth-700 cursor-not-allowed'
+                  : 'text-earth-400 hover:bg-earth-100 dark:hover:bg-earth-800'
+              }`}
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
+              onClick={handleNextChunk}
+              disabled={currentChunkIndex === metadata.chunks.length - 1}
+              className={`p-2 rounded-lg ${
+                currentChunkIndex === metadata.chunks.length - 1
+                  ? 'text-earth-700 cursor-not-allowed'
+                  : 'text-earth-400 hover:bg-earth-100 dark:hover:bg-earth-800'
+              }`}
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
       </div>
       
       <div className="bg-white dark:bg-earth-800 rounded-lg shadow-sm p-6">
         <div className="prose dark:prose-invert max-w-none">
           <pre className="whitespace-pre-wrap font-palatino">
-            {metadata.content || metadata.text}
+            {currentChunk.content}
           </pre>
         </div>
       </div>
