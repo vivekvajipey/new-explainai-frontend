@@ -3,6 +3,7 @@
 import { useEffect, useState, use } from 'react';
 import { DocumentWebSocket } from '@/lib/api';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import ChunkConversation from '@/components/ChunkConversation';
 
 interface DocumentChunk {
   id: string;
@@ -39,6 +40,10 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
 
     const initializeWebSocket = () => {
       try {
+        if (websocket) {
+          websocket.close();
+        }
+        
         websocket = new DocumentWebSocket(id);
 
         websocket.onMessage('document.metadata.completed', (data) => {
@@ -49,29 +54,30 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
             setIsLoading(false);
             clearTimeout(timeoutId);
           } else {
-            setError('Invalid document data received');
+            setError('Invalid metadata response');
             setIsLoading(false);
           }
         });
 
-        // Set a timeout to detect if we don't receive metadata within 5 seconds
+        // Set timeout for metadata request
         timeoutId = setTimeout(() => {
           if (!metadata) {
             setError('Failed to load document metadata. Please try again.');
             setIsLoading(false);
+            if (retryCount < 3) {
+              setRetryCount(prev => prev + 1);
+              initializeWebSocket();
+            }
           }
-        }, 5000);
-
-        return websocket;
-      } catch (err) {
-        console.error('WebSocket initialization error:', err);
-        setError('Failed to connect to document server');
+        }, 10000);
+      } catch (error) {
+        console.error('WebSocket initialization error:', error);
+        setError('Failed to connect to server');
         setIsLoading(false);
-        return null;
       }
     };
 
-    websocket = initializeWebSocket();
+    initializeWebSocket();
 
     return () => {
       clearTimeout(timeoutId);
@@ -132,7 +138,7 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
   const currentChunk = metadata.chunks[currentChunkIndex];
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-6xl mx-auto p-6">
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">{metadata.title}</h1>
         <div className="flex items-center justify-between">
@@ -166,11 +172,22 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
         </div>
       </div>
       
-      <div className="bg-white dark:bg-earth-800 rounded-lg shadow-sm p-6">
-        <div className="prose dark:prose-invert max-w-none">
-          <pre className="whitespace-pre-wrap font-palatino">
-            {currentChunk.content}
-          </pre>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Document Content */}
+        <div className="bg-white dark:bg-earth-800 rounded-lg shadow-sm p-6">
+          <div className="prose dark:prose-invert max-w-none">
+            <pre className="whitespace-pre-wrap font-palatino">
+              {currentChunk.content}
+            </pre>
+          </div>
+        </div>
+
+        {/* Main Conversation */}
+        <div>
+          <ChunkConversation 
+            documentId={id} 
+            chunkId={currentChunk.id} 
+          />
         </div>
       </div>
     </div>
