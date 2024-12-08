@@ -24,6 +24,9 @@ export default function ChunkConversation({ documentId, chunkId }: ChunkConversa
   const websocketRef = useRef<ConversationWebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  // Store conversations in memory
+  const conversationsRef = useRef<Map<string, { id: string, messages: Message[] }>>(new Map());
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
@@ -37,9 +40,18 @@ export default function ChunkConversation({ documentId, chunkId }: ChunkConversa
         }
 
         setIsLoading(true);
-        setConversationId(null);
         setError(null);
-        setMessages([]);
+
+        // Check if we have an existing conversation for this chunk
+        const existingConversation = conversationsRef.current.get(chunkId);
+        if (existingConversation) {
+          setConversationId(existingConversation.id);
+          setMessages(existingConversation.messages);
+          setIsLoading(false);
+        } else {
+          setConversationId(null);
+          setMessages([]);
+        }
 
         // Create new WebSocket connection
         console.log('Initializing WebSocket for document:', documentId);
@@ -53,7 +65,15 @@ export default function ChunkConversation({ documentId, chunkId }: ChunkConversa
         ws.onMessage('conversation.main.create.completed', (data) => {
           console.log('Conversation created:', data);
           if (data && data.conversation_id) {
-            setConversationId(data.conversation_id);
+            const newConversationId = data.conversation_id;
+            setConversationId(newConversationId);
+            
+            // Store new conversation
+            conversationsRef.current.set(chunkId, {
+              id: newConversationId,
+              messages: []
+            });
+            
             setIsLoading(false);
             setError(null);
             clearTimeout(timeoutId);
@@ -66,12 +86,25 @@ export default function ChunkConversation({ documentId, chunkId }: ChunkConversa
         ws.onMessage('conversation.message.send.completed', (data) => {
           console.log('Received message:', data);
           if (data && data.message) {
-            setMessages(prev => [...prev, {
+            const newMessage = {
               id: Date.now().toString(),
               role: 'assistant',
               content: data.message,
               timestamp: new Date().toISOString()
-            }]);
+            };
+            
+            setMessages(prev => {
+              const updatedMessages = [...prev, newMessage];
+              // Update stored conversation
+              if (conversationId) {
+                conversationsRef.current.set(chunkId, {
+                  id: conversationId,
+                  messages: updatedMessages
+                });
+              }
+              return updatedMessages;
+            });
+            
             setIsLoading(false);
           } else {
             setError('Failed to receive message');
@@ -79,20 +112,22 @@ export default function ChunkConversation({ documentId, chunkId }: ChunkConversa
           }
         });
 
-        // Create the conversation
-        console.log('Creating conversation with chunk:', chunkId);
-        
-        // Set timeout after sending request
-        timeoutId = setTimeout(() => {
-          if (!conversationId) {
-            setError('Conversation creation timed out');
-            setIsLoading(false);
-          }
-        }, 10000);
+        // If no existing conversation, create a new one
+        if (!existingConversation) {
+          console.log('Creating conversation with chunk:', chunkId);
+          
+          // Set timeout after sending request
+          timeoutId = setTimeout(() => {
+            if (!conversationId) {
+              setError('Conversation creation timed out');
+              setIsLoading(false);
+            }
+          }, 10000);
 
-        await ws.send('conversation.main.create', { 
-          chunk_id: chunkId
-        });
+          await ws.send('conversation.main.create', { 
+            chunk_id: chunkId
+          });
+        }
 
       } catch (err) {
         console.error('Failed to initialize conversation:', err);
@@ -125,18 +160,25 @@ export default function ChunkConversation({ documentId, chunkId }: ChunkConversa
       setIsLoading(true);
       setError(null);
 
-      // Add user message immediately
       const userMessage = {
         id: Date.now().toString(),
         role: 'user' as const,
         content,
         timestamp: new Date().toISOString(),
       };
-      setMessages(prev => [...prev, userMessage]);
+
+      setMessages(prev => {
+        const updatedMessages = [...prev, userMessage];
+        // Update stored conversation
+        conversationsRef.current.set(chunkId, {
+          id: conversationId,
+          messages: updatedMessages
+        });
+        return updatedMessages;
+      });
 
       setInput('');
       
-      // Send message
       await websocketRef.current.send('conversation.message.send', {
         conversation_id: conversationId,
         content
