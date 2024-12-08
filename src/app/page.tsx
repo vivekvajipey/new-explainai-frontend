@@ -1,96 +1,97 @@
 'use client';
 
-import { useState } from 'react';
-import { api } from '@/lib/api';
+import { Upload } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { uploadDocument } from '@/lib/api';
 
 export default function Home() {
   const router = useRouter();
-  const [file, setFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
-  const handleUpload = async () => {
-    if (!file) return;
-
+  const handleFileUpload = async (file: File) => {
     try {
-      setUploading(true);
-      setError(null);
-      const response = await api.uploadDocument(file);
-      
-      if (!response.document_id) {
-        throw new Error('No document ID received from server');
-      }
-      
-      // Use Next.js router for navigation
-      router.push(`/document/${response.document_id}`);
-    } catch (err) {
-      setError('Failed to upload document. Please try again.');
-      console.error('Upload error:', err);
+      setIsUploading(true);
+      const { document_id } = await uploadDocument(file);
+      router.push(`/documents/${document_id}`);
+    } catch (error) {
+      console.error('Upload failed:', error);
+      alert('Failed to upload document. Please try again.');
     } finally {
-      setUploading(false);
+      setIsUploading(false);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      await handleFileUpload(file);
+    }
+  };
+
+  const handleFileInput = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await handleFileUpload(file);
     }
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-lg">
-        <div>
-          <h1 className="text-3xl font-bold text-center text-gray-900">
-            Document Explainer
-          </h1>
-          <p className="mt-2 text-center text-gray-600">
-            Upload a document to get started
-          </p>
-        </div>
-
-        <div className="mt-8 space-y-6">
-          <div className="flex flex-col items-center justify-center w-full">
-            <label
-              htmlFor="file-upload"
-              className="w-full flex flex-col items-center px-4 py-6 bg-white text-gray-400 rounded-lg border-2 border-gray-300 border-dashed cursor-pointer hover:border-gray-400"
-            >
-              <svg
-                className="w-8 h-8"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                />
-              </svg>
-              <span className="mt-2 text-sm">
-                {file ? file.name : 'Select a file'}
-              </span>
-              <input
-                id="file-upload"
-                type="file"
-                className="hidden"
-                accept=".pdf,.doc,.docx,.txt"
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
-              />
-            </label>
+    <div className="max-w-2xl mx-auto">
+      <div className="text-center mb-8">
+        <h1 className="text-4xl font-bold mb-4">Welcome to ExplainAI</h1>
+        <p className="text-earth-600 dark:text-earth-300">
+          Upload your documents and start an intelligent conversation
+        </p>
+      </div>
+      
+      <div 
+        className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors ${
+          isDragging 
+            ? 'border-earth-400 bg-earth-50/50' 
+            : 'border-earth-200 dark:border-earth-800'
+        }`}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setIsDragging(true);
+        }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={handleDrop}
+      >
+        <div className="flex flex-col items-center gap-4">
+          <Upload className={`w-12 h-12 ${isUploading ? 'animate-bounce' : ''} text-earth-400`} />
+          <div>
+            <p className="text-lg font-semibold mb-2">
+              {isUploading ? 'Uploading...' : 'Drop your document here'}
+            </p>
+            <p className="text-earth-600 dark:text-earth-300 text-sm">
+              {isUploading ? 'Please wait' : 'or click to browse'}
+            </p>
           </div>
-
-          {error && (
-            <p className="text-red-500 text-sm text-center">{error}</p>
-          )}
-
-          <button
-            onClick={handleUpload}
-            disabled={!file || uploading}
-            className={`w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
-              (!file || uploading) && 'opacity-50 cursor-not-allowed'
+          <input
+            type="file"
+            className="hidden"
+            accept=".pdf,.doc,.docx,.txt"
+            id="file-upload"
+            onChange={handleFileInput}
+            disabled={isUploading}
+          />
+          <label
+            htmlFor="file-upload"
+            className={`mt-4 px-6 py-2 bg-earth-800 text-earth-50 rounded-lg transition-colors cursor-pointer ${
+              isUploading 
+                ? 'opacity-50 cursor-not-allowed' 
+                : 'hover:bg-earth-700'
             }`}
           >
-            {uploading ? 'Uploading...' : 'Upload'}
-          </button>
+            Select File
+          </label>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
