@@ -40,8 +40,7 @@ export class BaseWebSocket {
     }
 
     this.isConnecting = true;
-    
-    return new Promise((resolve, reject) => {
+    this.connectionPromise = new Promise((resolve, reject) => {
       console.log(`Connecting to WebSocket for document ${this.documentId} at ${this.endpoint}...`);
       const ws = new WebSocket(`${WS_BASE_URL}${this.endpoint}/${this.documentId}`);
       let timeoutId: NodeJS.Timeout;
@@ -102,6 +101,8 @@ export class BaseWebSocket {
         }
       };
     });
+
+    return this.connectionPromise;
   }
 
   protected handleReconnect() {
@@ -169,6 +170,13 @@ export class BaseWebSocket {
     }
     this.messageHandlers.clear();
     this.messageQueue = [];
+  }
+
+  public async waitForConnection(): Promise<void> {
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      return;
+    }
+    return this.connectionPromise || this.connect();
   }
 }
 

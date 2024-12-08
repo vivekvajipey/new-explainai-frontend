@@ -46,6 +46,9 @@ export default function ChunkConversation({ documentId, chunkId }: ChunkConversa
         const ws = new ConversationWebSocket(documentId);
         websocketRef.current = ws;
 
+        // Wait for connection
+        await ws.waitForConnection();
+
         // Set up message handlers
         ws.onMessage('conversation.main.create.completed', (data) => {
           console.log('Conversation created:', data);
@@ -53,25 +56,20 @@ export default function ChunkConversation({ documentId, chunkId }: ChunkConversa
             setConversationId(data.conversation_id);
             setIsLoading(false);
             setError(null);
+            clearTimeout(timeoutId);
           } else {
             setError('Failed to create conversation');
             setIsLoading(false);
           }
         });
 
-        ws.onMessage('conversation.main.create.error', (data) => {
-          console.error('Failed to create conversation:', data);
-          setError(data.error || 'Failed to create conversation');
-          setIsLoading(false);
-        });
-
         ws.onMessage('conversation.message.send.completed', (data) => {
           console.log('Received message:', data);
-          if (data && data.content) {
+          if (data && data.message) {
             setMessages(prev => [...prev, {
-              id: data.message_id || Date.now().toString(),
+              id: Date.now().toString(),
               role: 'assistant',
-              content: data.content,
+              content: data.message,
               timestamp: new Date().toISOString()
             }]);
             setIsLoading(false);
@@ -81,7 +79,10 @@ export default function ChunkConversation({ documentId, chunkId }: ChunkConversa
           }
         });
 
-        // Create the conversation with timeout
+        // Create the conversation
+        console.log('Creating conversation with chunk:', chunkId);
+        
+        // Set timeout after sending request
         timeoutId = setTimeout(() => {
           if (!conversationId) {
             setError('Conversation creation timed out');
@@ -89,8 +90,6 @@ export default function ChunkConversation({ documentId, chunkId }: ChunkConversa
           }
         }, 10000);
 
-        // Send conversation creation request
-        console.log('Creating conversation with chunk:', chunkId);
         await ws.send('conversation.main.create', { 
           chunk_id: chunkId
         });
@@ -108,7 +107,6 @@ export default function ChunkConversation({ documentId, chunkId }: ChunkConversa
       clearTimeout(timeoutId);
       if (websocketRef.current) {
         websocketRef.current.close();
-        websocketRef.current = null;
       }
     };
   }, [documentId, chunkId]);
@@ -117,26 +115,29 @@ export default function ChunkConversation({ documentId, chunkId }: ChunkConversa
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSendMessage = async () => {
-    if (!input.trim() || !conversationId || isLoading || !websocketRef.current) return;
-
-    setIsLoading(true);
-    const messageContent = input.trim();
-    setInput('');
-
-    // Add user message immediately
-    const userMessage = {
-      id: Date.now().toString(),
-      role: 'user' as const,
-      content: messageContent,
-      timestamp: new Date().toISOString()
-    };
-    setMessages(prev => [...prev, userMessage]);
+  const sendMessage = async (content: string) => {
+    if (!websocketRef.current || !conversationId) {
+      setError('No active conversation');
+      return;
+    }
 
     try {
+      setIsLoading(true);
+      setError(null);
+
+      // Add user message immediately
+      const userMessage = {
+        id: Date.now().toString(),
+        role: 'user' as const,
+        content,
+        timestamp: new Date().toISOString(),
+      };
+      setMessages(prev => [...prev, userMessage]);
+      
+      // Send message
       await websocketRef.current.send('conversation.message.send', {
         conversation_id: conversationId,
-        content: messageContent
+        content
       });
     } catch (err) {
       console.error('Failed to send message:', err);
@@ -187,7 +188,7 @@ export default function ChunkConversation({ documentId, chunkId }: ChunkConversa
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage(input)}
             placeholder={
               !conversationId 
                 ? 'Initializing conversation...' 
@@ -199,7 +200,7 @@ export default function ChunkConversation({ documentId, chunkId }: ChunkConversa
             disabled={isLoading || !conversationId}
           />
           <button
-            onClick={handleSendMessage}
+            onClick={() => sendMessage(input)}
             disabled={isLoading || !conversationId || !input.trim()}
             className={`p-2 rounded-lg ${
               isLoading || !conversationId || !input.trim()
