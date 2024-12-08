@@ -133,6 +133,8 @@ export default function ChunkConversation({ documentId, chunkId }: ChunkConversa
         timestamp: new Date().toISOString(),
       };
       setMessages(prev => [...prev, userMessage]);
+
+      setInput('');
       
       // Send message
       await websocketRef.current.send('conversation.message.send', {
