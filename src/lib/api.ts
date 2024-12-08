@@ -87,11 +87,14 @@ export class BaseWebSocket {
       ws.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
-          console.log('Received WebSocket message:', message);
+          console.log('Raw WebSocket message:', event.data);
+          console.log('Parsed WebSocket message:', message);
+          
           const { type, data } = message;
           
           const handlers = this.messageHandlers.get(type);
           if (handlers) {
+            console.log('Found handlers for type:', type);
             handlers.forEach((handler) => handler(data));
           } else {
             console.log('No handlers for message type:', type);
@@ -162,6 +165,16 @@ export class BaseWebSocket {
     this.messageHandlers.get(event)?.push(handler);
   }
 
+  public off(event: string, handler: (data: any) => void) {
+    const handlers = this.messageHandlers.get(event);
+    if (handlers) {
+      const index = handlers.indexOf(handler);
+      if (index !== -1) {
+        handlers.splice(index, 1);
+      }
+    }
+  }
+
   public close() {
     if (this.ws) {
       this.ws.onclose = null; // Prevent reconnection attempts
@@ -208,5 +221,65 @@ export class DocumentWebSocket extends BaseWebSocket {
 export class ConversationWebSocket extends BaseWebSocket {
   constructor(documentId: string) {
     super(documentId, '/conversations/stream');
+  }
+
+  // Override handleMessage to handle conversation-specific messages
+  protected handleMessage(event: MessageEvent) {
+    try {
+      const message = JSON.parse(event.data);
+      console.log('Raw WebSocket message:', event.data);
+      console.log('Parsed WebSocket message:', message);
+      
+      const { type, data, error } = message;
+      
+      if (error) {
+        console.error('WebSocket error:', error);
+        const handlers = this.messageHandlers.get(`${type}.error`);
+        if (handlers) {
+          handlers.forEach(handler => handler({ error }));
+        }
+        return;
+      }
+      
+      const handlers = this.messageHandlers.get(type);
+      if (handlers) {
+        console.log('Found handlers for type:', type);
+        handlers.forEach(handler => handler(data));
+      } else {
+        console.log('No handlers for message type:', type);
+      }
+    } catch (error) {
+      console.error('Failed to handle WebSocket message:', error);
+    }
+  }
+
+  async getMessages(conversationId: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const messageType = 'conversation.messages.get';
+      const responseType = 'conversation.messages.get.completed';
+      const errorType = 'conversation.messages.get.error';
+
+      // Set up one-time handler for messages response
+      const handler = (data: any) => {
+        console.log('Messages response:', data);
+        resolve(data);
+        this.off(responseType, handler);
+        this.off(errorType, errorHandler);
+      };
+
+      const errorHandler = (data: any) => {
+        console.error('Failed to fetch messages:', data);
+        reject(new Error(data.error || 'Failed to fetch messages'));
+        this.off(responseType, handler);
+        this.off(errorType, errorHandler);
+      };
+
+      // Register handlers
+      this.onMessage(responseType, handler);
+      this.onMessage(errorType, errorHandler);
+
+      // Request messages
+      this.send(messageType, { conversation_id: conversationId });
+    });
   }
 }
