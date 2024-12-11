@@ -113,12 +113,12 @@ export class ConversationWebSocket extends BaseWebSocket {
         conversation_id: conversationId
       });
 
-      // Increase timeout for initial message fetch
+      // Short timeout since missing messages is not an error
       setTimeout(() => {
         this.off('conversation.messages.get.completed', handler);
         this.off('conversation.messages.get.error', errorHandler);
-        reject(new Error('Timeout getting messages'));
-      }, 20000); // Increased to 20 seconds
+        reject(new Error('No messages yet'));
+      }, 5000); // 5 seconds is plenty for initial fetch
     });
   }
 

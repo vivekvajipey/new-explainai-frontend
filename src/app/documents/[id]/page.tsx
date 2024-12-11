@@ -3,7 +3,7 @@
 import { useEffect, useState, use } from 'react';
 import { DocumentWebSocket } from '@/lib/api';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import ChunkConversation from '@/components/ChunkConversation';
+import MainConversation from '@/components/conversations/MainConversation';
 
 interface DocumentChunk {
   id: string;
@@ -184,10 +184,7 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
 
         {/* Main Conversation */}
         <div>
-          <ChunkConversation 
-            documentId={id} 
-            chunkId={currentChunk.id} 
-          />
+          <MainConversation documentId={id} />
         </div>
       </div>
     </div>
