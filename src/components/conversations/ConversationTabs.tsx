@@ -1,4 +1,4 @@
-import { useState, forwardRef, useImperativeHandle, useEffect } from 'react';
+import { useState, forwardRef, useImperativeHandle, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import MainConversation from './MainConversation';
 import ChunkConversation from './ChunkConversation';
@@ -33,21 +33,41 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
       active: true,
       data: { documentId }
     }]);
+    const tabsContainerRef = useRef<HTMLDivElement>(null);
+    const [showLeftFade, setShowLeftFade] = useState(false);
+    const [showRightFade, setShowRightFade] = useState(false);
 
     // Filter tabs based on current sequence
     const visibleTabs = tabs.filter(tab => 
       tab.type === 'main' || tab.data.sequence === currentSequence
     );
 
+    // Check for scroll shadows
+    const checkForScrollShadows = () => {
+      if (!tabsContainerRef.current) return;
+      
+      const { scrollLeft, scrollWidth, clientWidth } = tabsContainerRef.current;
+      setShowLeftFade(scrollLeft > 0);
+      setShowRightFade(scrollLeft < scrollWidth - clientWidth);
+    };
+
+    // Scroll active tab into view
+    useEffect(() => {
+      const activeTab = tabsContainerRef.current?.querySelector('[data-active="true"]');
+      if (activeTab) {
+        activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      }
+      checkForScrollShadows();
+    }, [tabs]);
+
     // When changing chunks, activate main conversation if current tab isn't visible
     useEffect(() => {
       setTabs(prev => {
         const activeTab = prev.find(tab => tab.active);
         if (activeTab && activeTab.type === 'chunk' && activeTab.data.sequence !== currentSequence) {
-          // Current active tab is a chunk conversation from a different chunk
           return prev.map(tab => ({
             ...tab,
-            active: tab.type === 'main'  // Switch to main conversation
+            active: tab.type === 'main'
           }));
         }
         return prev;
@@ -70,7 +90,7 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
       const newTab: Tab = {
         id: `chunk-${Date.now()}`,
         type: 'chunk',
-        title: `Discussion: ${highlightText.slice(0, 30)}...`,
+        title: `${highlightText.slice(0, 30)}...`,
         active: true,
         data: {
           documentId,
@@ -92,34 +112,54 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
 
     return (
       <div className="flex flex-col h-full">
-        {/* Tab Bar */}
-        <div className="flex space-x-1 bg-earth-100 dark:bg-earth-900 p-2 rounded-t-lg">
-          {visibleTabs.map(tab => (
-            <div
-              key={tab.id}
-              className={`
-                flex items-center space-x-2 px-4 py-2 rounded-lg cursor-pointer
-                ${tab.active 
-                  ? 'bg-white dark:bg-earth-800 text-earth-900 dark:text-earth-50' 
-                  : 'bg-earth-200 dark:bg-earth-700 text-earth-600 dark:text-earth-400 hover:bg-earth-300'
-                }
-              `}
-              onClick={() => handleTabClick(tab.id)}
-            >
-              <span className="truncate max-w-[150px]">{tab.title}</span>
-              {tab.id !== 'main' && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleCloseTab(tab.id);
-                  }}
-                  className="hover:bg-earth-200 dark:hover:bg-earth-600 rounded-full p-1"
+        {/* Tab Bar Container */}
+        <div className="relative bg-earth-100 dark:bg-earth-900 rounded-t-lg">
+          {/* Left Fade */}
+          {showLeftFade && (
+            <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-earth-100 dark:from-earth-900 to-transparent z-10" />
+          )}
+          
+          {/* Scrollable Tab Bar */}
+          <div 
+            ref={tabsContainerRef}
+            className="flex overflow-x-auto scrollbar-hide p-2 relative"
+            onScroll={checkForScrollShadows}
+          >
+            <div className="flex space-x-1 min-w-min">
+              {visibleTabs.map(tab => (
+                <div
+                  key={tab.id}
+                  data-active={tab.active}
+                  className={`
+                    flex items-center space-x-2 px-4 py-2 rounded-lg cursor-pointer whitespace-nowrap
+                    ${tab.active 
+                      ? 'bg-white dark:bg-earth-800 text-earth-900 dark:text-earth-50' 
+                      : 'bg-earth-200 dark:bg-earth-700 text-earth-600 dark:text-earth-400 hover:bg-earth-300'
+                    }
+                  `}
+                  onClick={() => handleTabClick(tab.id)}
                 >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
+                  <span className="truncate max-w-[150px]">{tab.title}</span>
+                  {tab.id !== 'main' && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCloseTab(tab.id);
+                      }}
+                      className="hover:bg-earth-200 dark:hover:bg-earth-600 rounded-full p-1"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+
+          {/* Right Fade */}
+          {showRightFade && (
+            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-earth-100 dark:from-earth-900 to-transparent z-10" />
+          )}
         </div>
 
         {/* Conversation Container */}
