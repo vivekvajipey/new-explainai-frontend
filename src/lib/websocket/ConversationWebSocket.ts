@@ -122,6 +122,44 @@ export class ConversationWebSocket extends BaseWebSocket {
     });
   }
 
+  async createChunkConversation(chunkId: string, highlightText: string): Promise<string> {
+    await this.waitForConnection();
+    
+    return new Promise((resolve, reject) => {
+      const handler = (data: { conversation_id: string }) => {
+        if (data.conversation_id) {
+          this.conversationId = data.conversation_id;
+          resolve(data.conversation_id);
+        } else {
+          reject(new Error('Invalid response from server'));
+        }
+        this.off('conversation.chunk.create.completed', handler);
+        this.off('conversation.chunk.create.error', errorHandler);
+      };
+
+      const errorHandler = (error: { message: string }) => {
+        reject(new Error(error.message || 'Failed to create chunk conversation'));
+        this.off('conversation.chunk.create.completed', handler);
+        this.off('conversation.chunk.create.error', errorHandler);
+      };
+
+      this.onMessage('conversation.chunk.create.completed', handler);
+      this.onMessage('conversation.chunk.create.error', errorHandler);
+
+      this.send('conversation.chunk.create', {
+        document_id: this.documentId,
+        chunk_id: chunkId,
+        highlight_text: highlightText
+      });
+
+      setTimeout(() => {
+        this.off('conversation.chunk.create.completed', handler);
+        this.off('conversation.chunk.create.error', errorHandler);
+        reject(new Error('Timeout creating chunk conversation'));
+      }, 10000);
+    });
+  }
+
   close() {
     super.close();
     this.conversationId = null;

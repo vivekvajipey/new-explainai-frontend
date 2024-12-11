@@ -3,26 +3,22 @@ import BaseConversation from './BaseConversation';
 
 interface ChunkConversationProps {
   documentId: string;
-  chunkId: string;
+  sequence: string;  // The chunk sequence number (e.g., "0", "1", "2")
   highlightText: string;
 }
 
 export default function ChunkConversation({ 
   documentId, 
-  chunkId,
+  sequence,
   highlightText 
 }: ChunkConversationProps) {
   const handleInitialize = async (ws: ConversationWebSocket) => {
-    const response = await ws.send('conversation.chunk.create', {
-      document_id: documentId,
-      chunk_id: chunkId,
-      highlight_text: highlightText
-    });
-    return response.conversation_id;
+    const response = await ws.createChunkConversation(sequence, highlightText);
+    return response;
   };
 
   const handleSendMessage = async (ws: ConversationWebSocket, content: string) => {
-    await ws.sendMessage(content);
+    await ws.sendMessage(content, sequence);
   };
 
   return (

@@ -1,9 +1,12 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState, use, useRef } from 'react';
 import { DocumentWebSocket } from '@/lib/api';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import MainConversation from '@/components/conversations/MainConversation';
+import ConversationTabs from '@/components/conversations/ConversationTabs';
+import TextSelectionPopup from '@/components/TextSelectionPopup';
+import { ConversationTabsRef } from '@/components/conversations/ConversationTabs';
 
 interface DocumentChunk {
   id: string;
@@ -28,11 +31,12 @@ interface DocumentMetadata {
 
 export default function DocumentPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const [metadata, setMetadata] = useState<DocumentMetadata | null>(null);
+  const [metadata, setMetadata] = useState<DocumentMetadta | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
   const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
+  const conversationTabsRef = useRef<ConversationTabsRef>(null);
 
   useEffect(() => {
     let websocket: DocumentWebSocket | null = null;
@@ -105,6 +109,15 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
     }
   };
 
+  const handleCreateDiscussion = (text: string, range: { start: number; end: number }) => {
+    if (!conversationTabsRef.current) return;
+    
+    conversationTabsRef.current.createChunkConversation(
+      text,
+      currentChunkIndex.toString()
+    );
+  };
+
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
@@ -174,17 +187,21 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Document Content */}
-        <div className="bg-white dark:bg-earth-800 rounded-lg shadow-sm p-6">
+        <div className="bg-white dark:bg-earth-800 rounded-lg shadow-sm p-6 relative">
           <div className="prose dark:prose-invert max-w-none">
             <pre className="whitespace-pre-wrap font-palatino">
               {currentChunk.content}
             </pre>
           </div>
+          <TextSelectionPopup onCreateDiscussion={handleCreateDiscussion} />
         </div>
 
-        {/* Main Conversation */}
-        <div>
-          <MainConversation documentId={id} />
+        {/* Conversations */}
+        <div className="h-[600px]">
+          <ConversationTabs 
+            ref={conversationTabsRef}
+            documentId={id} 
+          />
         </div>
       </div>
     </div>
