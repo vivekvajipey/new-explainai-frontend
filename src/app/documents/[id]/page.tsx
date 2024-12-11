@@ -200,7 +200,8 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
         <div className="h-[600px]">
           <ConversationTabs 
             ref={conversationTabsRef}
-            documentId={id} 
+            documentId={id}
+            currentSequence={currentChunkIndex.toString()}
           />
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { useState, forwardRef, useImperativeHandle } from 'react';
+import { useState, forwardRef, useImperativeHandle, useEffect } from 'react';
 import { X } from 'lucide-react';
 import MainConversation from './MainConversation';
 import ChunkConversation from './ChunkConversation';
@@ -17,6 +17,7 @@ interface Tab {
 
 interface ConversationTabsProps {
   documentId: string;
+  currentSequence: string;
 }
 
 export interface ConversationTabsRef {
@@ -24,7 +25,7 @@ export interface ConversationTabsRef {
 }
 
 const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
-  ({ documentId }, ref) => {
+  ({ documentId, currentSequence }, ref) => {
     const [tabs, setTabs] = useState<Tab[]>([{
       id: 'main',
       type: 'main',
@@ -32,6 +33,26 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
       active: true,
       data: { documentId }
     }]);
+
+    // Filter tabs based on current sequence
+    const visibleTabs = tabs.filter(tab => 
+      tab.type === 'main' || tab.data.sequence === currentSequence
+    );
+
+    // When changing chunks, activate main conversation if current tab isn't visible
+    useEffect(() => {
+      setTabs(prev => {
+        const activeTab = prev.find(tab => tab.active);
+        if (activeTab && activeTab.type === 'chunk' && activeTab.data.sequence !== currentSequence) {
+          // Current active tab is a chunk conversation from a different chunk
+          return prev.map(tab => ({
+            ...tab,
+            active: tab.type === 'main'  // Switch to main conversation
+          }));
+        }
+        return prev;
+      });
+    }, [currentSequence]);
 
     const handleTabClick = (tabId: string) => {
       setTabs(prev => prev.map(tab => ({
@@ -73,7 +94,7 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
       <div className="flex flex-col h-full">
         {/* Tab Bar */}
         <div className="flex space-x-1 bg-earth-100 dark:bg-earth-900 p-2 rounded-t-lg">
-          {tabs.map(tab => (
+          {visibleTabs.map(tab => (
             <div
               key={tab.id}
               className={`
@@ -103,7 +124,7 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
 
         {/* Conversation Container */}
         <div className="flex-1">
-          {tabs.map(tab => (
+          {visibleTabs.map(tab => (
             <div
               key={tab.id}
               className={`h-full ${tab.active ? 'block' : 'hidden'}`}
