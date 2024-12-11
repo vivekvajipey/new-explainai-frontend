@@ -62,25 +62,25 @@ export default function ChunkConversation({ documentId, chunkId }: ChunkConversa
           setIsLoading(false);
         });
 
-        // Fetch existing messages
-        try {
-          const messagesResponse = await ws.getMessages(newConversationId);
-          if (messagesResponse?.messages?.length > 0) {
-            setMessages(messagesResponse.messages.map(msg => ({
-              id: msg.id,
-              role: msg.role === 'system' ? 'assistant' : msg.role,
-              content: msg.message,
-              timestamp: msg.created_at
-            })));
-          } else {
-            setMessages([]);
-          }
-        } catch (error) {
-          console.log('No existing messages:', error);
-          setMessages([]);
-        }
-
-        setIsLoading(false);
+        // Try to fetch existing messages, but don't block on it
+        ws.getMessages(newConversationId)
+          .then(messagesResponse => {
+            if (messagesResponse?.messages?.length > 0) {
+              setMessages(messagesResponse.messages.map(msg => ({
+                id: msg.id,
+                role: msg.role === 'system' ? 'assistant' : msg.role,
+                content: msg.message,
+                timestamp: msg.created_at
+              })));
+            }
+          })
+          .catch(() => {
+            // No messages yet, that's fine
+            console.log('No existing messages');
+          })
+          .finally(() => {
+            setIsLoading(false);
+          });
 
       } catch (error) {
         console.error('Failed to initialize conversation:', error);
