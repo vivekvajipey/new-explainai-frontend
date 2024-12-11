@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Send } from 'lucide-react';
-import { ConversationWebSocket } from '@/lib/api';
+import { ConversationWebSocket } from '@/lib/websocket/ConversationWebSocket';
 
 interface Message {
   id: string;
@@ -25,12 +25,7 @@ export default function ChunkConversation({ documentId, chunkId }: ChunkConversa
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   
-  // Store conversations in memory
-  const conversationsRef = useRef<Map<string, { id: string, messages: Message[] }>>(new Map());
-
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-
     const initializeConversation = async () => {
       try {
         // Clean up existing connection
@@ -41,67 +36,51 @@ export default function ChunkConversation({ documentId, chunkId }: ChunkConversa
 
         setIsLoading(true);
         setError(null);
-        setMessages([]);
 
         // Create new WebSocket connection
-        console.log('Initializing WebSocket for document:', documentId);
         const ws = new ConversationWebSocket(documentId);
         websocketRef.current = ws;
 
-        // Wait for connection
-        await ws.waitForConnection();
+        // Create main conversation
+        const newConversationId = await ws.createMainConversation();
+        setConversationId(newConversationId);
 
         // Set up message handlers
-        ws.onMessage('conversation.main.create.completed', async (data) => {
-          console.log('Conversation created with data:', data);
-          if (data && data.conversation_id) {
-            const newConversationId = data.conversation_id;
-            console.log('Setting conversation ID:', newConversationId);
-            setConversationId(newConversationId);
-            
-            try {
-              // Fetch existing messages
-              console.log('Fetching messages for conversation:', newConversationId);
-              const messagesResponse = await ws.getMessages(newConversationId);
-              console.log('Messages response:', messagesResponse);
-              if (messagesResponse && messagesResponse.messages) {
-                setMessages(messagesResponse.messages.map((msg: any) => ({
-                  id: msg.id || Date.now().toString(),
-                  role: msg.role,
-                  content: msg.content,
-                  timestamp: msg.created_at || new Date().toISOString()
-                })));
-              }
-              setIsLoading(false);
-              setError(null);
-              clearTimeout(timeoutId);
-            } catch (error) {
-              console.error('Failed to fetch messages:', error);
-              setIsLoading(false);
-            }
+        ws.onMessage('conversation.message.send.completed', (data: { message: string }) => {
+          setMessages(prev => [...prev, {
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: data.message,
+            timestamp: new Date().toISOString()
+          }]);
+          setIsLoading(false);
+        });
+
+        // Handle errors
+        ws.onMessage('conversation.message.send.error', (error: { message: string }) => {
+          setError(error.message || 'Failed to send message');
+          setIsLoading(false);
+        });
+
+        // Fetch existing messages
+        try {
+          const messagesResponse = await ws.getMessages(newConversationId);
+          if (messagesResponse?.messages?.length > 0) {
+            setMessages(messagesResponse.messages.map(msg => ({
+              id: msg.id,
+              role: msg.role === 'system' ? 'assistant' : msg.role,
+              content: msg.message,
+              timestamp: msg.created_at
+            })));
           } else {
-            console.error('Invalid conversation data:', data);
-            setError('Failed to create conversation - invalid response');
-            setIsLoading(false);
+            setMessages([]);
           }
-        });
+        } catch (error) {
+          console.log('No existing messages:', error);
+          setMessages([]);
+        }
 
-        // Set up error handlers
-        ws.onMessage('conversation.main.create.error', (error) => {
-          console.error('Failed to create conversation:', error);
-          setError(error.message || 'Failed to create conversation');
-          setIsLoading(false);
-        });
-
-        // Create conversation for chunk
-        console.log('Creating conversation with chunk:', chunkId);
-        ws.send('conversation.main.create', { chunk_id: chunkId });
-
-        // Set timeout for conversation creation
-        timeoutId = setTimeout(() => {
-          setError('Conversation creation timed out');
-          setIsLoading(false);
-        }, 10000);
+        setIsLoading(false);
 
       } catch (error) {
         console.error('Failed to initialize conversation:', error);
@@ -113,12 +92,11 @@ export default function ChunkConversation({ documentId, chunkId }: ChunkConversa
     initializeConversation();
 
     return () => {
-      clearTimeout(timeoutId);
       if (websocketRef.current) {
         websocketRef.current.close();
       }
     };
-  }, [documentId, chunkId]);
+  }, [documentId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -130,36 +108,31 @@ export default function ChunkConversation({ documentId, chunkId }: ChunkConversa
       return;
     }
 
+    // Create message object before try block so it's in scope for catch block
+    const userMessage = {
+      id: Date.now().toString(),
+      role: 'user' as const,
+      content,
+      timestamp: new Date().toISOString(),
+    };
+
     try {
       setIsLoading(true);
       setError(null);
 
-      const userMessage = {
-        id: Date.now().toString(),
-        role: 'user' as const,
-        content,
-        timestamp: new Date().toISOString(),
-      };
-
-      setMessages(prev => {
-        const updatedMessages = [...prev, userMessage];
-        // Update stored conversation
-        conversationsRef.current.set(chunkId, {
-          id: conversationId,
-          messages: updatedMessages
-        });
-        return updatedMessages;
-      });
-
+      // Add user message immediately
+      setMessages(prev => [...prev, userMessage]);
       setInput('');
+
+      // Always use "0" for main conversation
+      await websocketRef.current.sendMessage(content, "0");
       
-      await websocketRef.current.send('conversation.message.send', {
-        conversation_id: conversationId,
-        content
-      });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to send message:', err);
-      setError('Failed to send message');
+      setError(err.message || 'Failed to send message');
+      // Remove the user message if sending failed
+      setMessages(prev => prev.filter(msg => msg.id !== userMessage.id));
+    } finally {
       setIsLoading(false);
     }
   };
