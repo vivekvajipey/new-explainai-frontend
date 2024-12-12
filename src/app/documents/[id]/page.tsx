@@ -3,7 +3,6 @@
 import { useEffect, useState, use, useRef } from 'react';
 import { DocumentWebSocket } from '@/lib/api';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import MainConversation from '@/components/conversations/MainConversation';
 import ConversationTabs from '@/components/conversations/ConversationTabs';
 import TextSelectionPopup from '@/components/TextSelectionPopup';
 import { ConversationTabsRef } from '@/components/conversations/ConversationTabs';
@@ -29,9 +28,13 @@ interface DocumentMetadata {
   };
 }
 
+interface MetadataResponse {
+  document: DocumentMetadata;
+}
+
 export default function DocumentPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const [metadata, setMetadata] = useState<DocumentMetadta | null>(null);
+  const [metadata, setMetadata] = useState<DocumentMetadata | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
@@ -50,10 +53,11 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
         
         websocket = new DocumentWebSocket(id);
 
-        websocket.onMessage('document.metadata.completed', (data) => {
+        websocket.onMessage('document.metadata.completed', ((data: unknown) => {
           console.log('Received metadata:', data);
-          if (data && data.document) {
-            setMetadata(data.document);
+          const metadataResponse = data as MetadataResponse;
+          if (metadataResponse?.document) {
+            setMetadata(metadataResponse.document);
             setError(null);
             setIsLoading(false);
             clearTimeout(timeoutId);
@@ -61,9 +65,8 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
             setError('Invalid metadata response');
             setIsLoading(false);
           }
-        });
+        }));
 
-        // Set timeout for metadata request
         timeoutId = setTimeout(() => {
           if (!metadata) {
             setError('Failed to load document metadata. Please try again.');
@@ -89,7 +92,7 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
         websocket.close();
       }
     };
-  }, [id, retryCount]);
+  }, [id, retryCount, metadata]);
 
   const handleRetry = () => {
     setIsLoading(true);
@@ -109,7 +112,7 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
     }
   };
 
-  const handleCreateDiscussion = (text: string, range: { start: number; end: number }) => {
+  const handleCreateDiscussion = (text: string) => {
     if (!conversationTabsRef.current) return;
     
     conversationTabsRef.current.createChunkConversation(

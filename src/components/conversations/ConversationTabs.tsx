@@ -1,18 +1,11 @@
-import { useState, forwardRef, useImperativeHandle, useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
+import { useEffect, useState, useRef, forwardRef, useImperativeHandle } from 'react';
+import { ConversationWebSocket } from '@/lib/websocket/ConversationWebSocket';
+import { ConversationData } from '@/lib/websocket/types';
 import MainConversation from './MainConversation';
 import ChunkConversation from './ChunkConversation';
 
-interface Tab {
-  id: string;
-  type: 'main' | 'chunk';
-  title: string;
-  active: boolean;
-  data: {
-    documentId: string;
-    sequence?: string;
-    highlightText?: string;
-  };
+export interface ConversationTabsRef {
+  createChunkConversation: (highlightText: string, chunkId: string) => void;
 }
 
 interface ConversationTabsProps {
@@ -20,167 +13,131 @@ interface ConversationTabsProps {
   currentSequence: string;
 }
 
-export interface ConversationTabsRef {
-  createChunkConversation: (text: string, sequence: string) => void;
-}
-
 const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
   ({ documentId, currentSequence }, ref) => {
-    const [tabs, setTabs] = useState<Tab[]>([{
-      id: 'main',
-      type: 'main',
-      title: 'Main Conversation',
-      active: true,
-      data: { documentId }
-    }]);
-    const tabsContainerRef = useRef<HTMLDivElement>(null);
-    const [showLeftFade, setShowLeftFade] = useState(false);
-    const [showRightFade, setShowRightFade] = useState(false);
+    const [activeTab, setActiveTab] = useState<'main' | string>('main');
+    const [chunkConversations, setChunkConversations] = useState<ConversationData[]>([]);
+    const websocketRef = useRef<ConversationWebSocket | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
-    // Filter tabs based on current sequence
-    const visibleTabs = tabs.filter(tab => 
-      tab.type === 'main' || tab.data.sequence === currentSequence
-    );
-
-    // Check for scroll shadows
-    const checkForScrollShadows = () => {
-      if (!tabsContainerRef.current) return;
-      
-      const { scrollLeft, scrollWidth, clientWidth } = tabsContainerRef.current;
-      setShowLeftFade(scrollLeft > 0);
-      setShowRightFade(scrollLeft < scrollWidth - clientWidth);
-    };
-
-    // Scroll active tab into view
+    // Initialize WebSocket connection
     useEffect(() => {
-      const activeTab = tabsContainerRef.current?.querySelector('[data-active="true"]');
-      if (activeTab) {
-        activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      if (!websocketRef.current) {
+        websocketRef.current = new ConversationWebSocket(documentId);
       }
-      checkForScrollShadows();
-    }, [tabs]);
-
-    // When changing chunks, activate main conversation if current tab isn't visible
-    useEffect(() => {
-      setTabs(prev => {
-        const activeTab = prev.find(tab => tab.active);
-        if (activeTab && activeTab.type === 'chunk' && activeTab.data.sequence !== currentSequence) {
-          return prev.map(tab => ({
-            ...tab,
-            active: tab.type === 'main'
-          }));
+      return () => {
+        if (websocketRef.current) {
+          websocketRef.current.close();
+          websocketRef.current = null;
         }
-        return prev;
-      });
-    }, [currentSequence]);
+      };
+    }, [documentId]);
 
-    const handleTabClick = (tabId: string) => {
-      setTabs(prev => prev.map(tab => ({
-        ...tab,
-        active: tab.id === tabId
-      })));
-    };
+    // Load chunk conversations when sequence changes
+    useEffect(() => {
+      const loadChunkConversations = async () => {
+        if (!websocketRef.current) return;
 
-    const handleCloseTab = (tabId: string) => {
-      if (tabId === 'main') return;
-      setTabs(prev => prev.filter(tab => tab.id !== tabId));
-    };
-
-    const createChunkConversation = (highlightText: string, sequence: string) => {
-      const newTab: Tab = {
-        id: `chunk-${Date.now()}`,
-        type: 'chunk',
-        title: `${highlightText.slice(0, 30)}...`,
-        active: true,
-        data: {
-          documentId,
-          sequence,
-          highlightText
+        try {
+          const response = await websocketRef.current.getChunkConversations(currentSequence);
+          const conversations = Object.entries(response.conversations).map(([id, data]) => ({
+            id,
+            type: 'chunk' as const,
+            chunkId: data.chunk_id,
+            highlightText: data.highlight_text,
+            messages: []
+          }));
+          setChunkConversations(conversations);
+        } catch (error) {
+          console.error('Failed to load chunk conversations:', error);
+          // Don't show error for missing conversations
         }
       };
 
-      setTabs(prev => prev.map(tab => ({
-        ...tab,
-        active: false
-      })).concat(newTab));
-    };
+      loadChunkConversations();
+    }, [currentSequence]);
 
-    // Expose the createChunkConversation method via ref
+    // Expose methods through ref
     useImperativeHandle(ref, () => ({
-      createChunkConversation
+      createChunkConversation: async (highlightText: string, chunkId: string) => {
+        if (!websocketRef.current) {
+          setError('WebSocket not initialized');
+          return;
+        }
+
+        try {
+          const conversationId = await websocketRef.current.createChunkConversation(
+            chunkId,
+            highlightText
+          );
+
+          setChunkConversations(prev => [...prev, {
+            id: conversationId,
+            type: 'chunk',
+            chunkId,
+            highlightText,
+            messages: []
+          }]);
+
+          setActiveTab(conversationId);
+        } catch (error) {
+          console.error('Failed to create chunk conversation:', error);
+          setError('Failed to create conversation');
+        }
+      }
     }));
 
     return (
       <div className="flex flex-col h-full">
-        {/* Tab Bar Container */}
-        <div className="relative bg-earth-100 dark:bg-earth-900 rounded-t-lg">
-          {/* Left Fade */}
-          {showLeftFade && (
-            <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-earth-100 dark:from-earth-900 to-transparent z-10" />
-          )}
-          
-          {/* Scrollable Tab Bar */}
-          <div 
-            ref={tabsContainerRef}
-            className="flex overflow-x-auto scrollbar-hide p-2 relative"
-            onScroll={checkForScrollShadows}
+        {/* Tabs */}
+        <div className="flex space-x-2 mb-4">
+          <button
+            onClick={() => setActiveTab('main')}
+            className={`px-4 py-2 rounded-lg ${
+              activeTab === 'main'
+                ? 'bg-earth-600 text-white'
+                : 'bg-earth-100 text-earth-600 hover:bg-earth-200'
+            }`}
           >
-            <div className="flex space-x-1 min-w-min">
-              {visibleTabs.map(tab => (
-                <div
-                  key={tab.id}
-                  data-active={tab.active}
-                  className={`
-                    flex items-center space-x-2 px-4 py-2 rounded-lg cursor-pointer whitespace-nowrap
-                    ${tab.active 
-                      ? 'bg-white dark:bg-earth-800 text-earth-900 dark:text-earth-50' 
-                      : 'bg-earth-200 dark:bg-earth-700 text-earth-600 dark:text-earth-400 hover:bg-earth-300'
-                    }
-                  `}
-                  onClick={() => handleTabClick(tab.id)}
-                >
-                  <span className="truncate max-w-[150px]">{tab.title}</span>
-                  {tab.id !== 'main' && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleCloseTab(tab.id);
-                      }}
-                      className="hover:bg-earth-200 dark:hover:bg-earth-600 rounded-full p-1"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Right Fade */}
-          {showRightFade && (
-            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-earth-100 dark:from-earth-900 to-transparent z-10" />
-          )}
-        </div>
-
-        {/* Conversation Container */}
-        <div className="flex-1">
-          {visibleTabs.map(tab => (
-            <div
-              key={tab.id}
-              className={`h-full ${tab.active ? 'block' : 'hidden'}`}
+            Main
+          </button>
+          {chunkConversations.map((conv) => (
+            <button
+              key={conv.id}
+              onClick={() => setActiveTab(conv.id)}
+              className={`px-4 py-2 rounded-lg ${
+                activeTab === conv.id
+                  ? 'bg-earth-600 text-white'
+                  : 'bg-earth-100 text-earth-600 hover:bg-earth-200'
+              }`}
             >
-              {tab.type === 'main' ? (
-                <MainConversation documentId={tab.data.documentId} />
-              ) : (
-                <ChunkConversation
-                  documentId={tab.data.documentId}
-                  sequence={tab.data.sequence!}
-                  highlightText={tab.data.highlightText!}
-                />
-              )}
-            </div>
+              {conv.highlightText!.substring(0, 20)}...
+            </button>
           ))}
         </div>
+
+        {/* Error message */}
+        {error && (
+          <div className="text-red-500 mb-4 text-center">
+            {error}
+          </div>
+        )}
+
+        {/* Active conversation */}
+        {activeTab === 'main' ? (
+          <MainConversation
+            documentId={documentId}
+            currentChunkId={currentSequence}
+            websocket={websocketRef.current!}
+          />
+        ) : (
+          <ChunkConversation
+            documentId={documentId}
+            chunkId={currentSequence}
+            highlightText={chunkConversations.find(conv => conv.id === activeTab)?.highlightText || ''}
+            websocket={websocketRef.current!}
+          />
+        )}
       </div>
     );
   }

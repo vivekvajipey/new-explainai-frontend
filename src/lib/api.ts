@@ -1,6 +1,10 @@
 const API_BASE_URL = 'http://localhost:8000/api';
 const WS_BASE_URL = 'ws://localhost:8000/api';
 
+interface MessageHandler {
+  (data: unknown): void;
+}
+
 export async function uploadDocument(file: File): Promise<{ document_id: string }> {
   const formData = new FormData();
   formData.append('file', file);
@@ -20,12 +24,12 @@ export async function uploadDocument(file: File): Promise<{ document_id: string 
 // Base WebSocket class with all the common functionality
 export class BaseWebSocket {
   protected ws: WebSocket | null = null;
-  protected messageHandlers: Map<string, ((data: any) => void)[]> = new Map();
+  protected messageHandlers: Map<string, MessageHandler[]> = new Map();
   protected reconnectAttempts = 0;
   protected maxReconnectAttempts = 5;
   protected reconnectDelay = 1000;
   protected isConnecting = false;
-  protected messageQueue: { event: string; data: any }[] = [];
+  protected messageQueue: { event: string; data: unknown }[] = [];
   protected documentId: string;
   protected connectionPromise: Promise<void> | null = null;
 
@@ -43,22 +47,19 @@ export class BaseWebSocket {
     this.connectionPromise = new Promise((resolve, reject) => {
       console.log(`Connecting to WebSocket for document ${this.documentId} at ${this.endpoint}...`);
       const ws = new WebSocket(`${WS_BASE_URL}${this.endpoint}/${this.documentId}`);
-      let timeoutId: NodeJS.Timeout;
-
-      const cleanup = () => {
-        clearTimeout(timeoutId);
-        ws.onopen = null;
-        ws.onerror = null;
-      };
-
-      // Connection timeout
-      timeoutId = setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         cleanup();
         const error = new Error('WebSocket connection timeout');
         console.error(error);
         reject(error);
         this.handleReconnect();
       }, 5000);
+
+      const cleanup = () => {
+        clearTimeout(timeoutId);
+        ws.onopen = null;
+        ws.onerror = null;
+      };
 
       ws.onopen = () => {
         cleanup();
@@ -132,7 +133,7 @@ export class BaseWebSocket {
     }
   }
 
-  public async send(event: string, data: any) {
+  public async send(event: string, data: unknown): Promise<void> {
     // Wait for connection before sending
     try {
       await this.connectionPromise;
@@ -158,14 +159,14 @@ export class BaseWebSocket {
     }
   }
 
-  public onMessage(event: string, handler: (data: any) => void) {
+  public onMessage(event: string, handler: MessageHandler): void {
     if (!this.messageHandlers.has(event)) {
       this.messageHandlers.set(event, []);
     }
     this.messageHandlers.get(event)?.push(handler);
   }
 
-  public off(event: string, handler: (data: any) => void) {
+  public off(event: string, handler: MessageHandler): void {
     const handlers = this.messageHandlers.get(event);
     if (handlers) {
       const index = handlers.indexOf(handler);
@@ -191,39 +192,7 @@ export class BaseWebSocket {
     }
     return this.connectionPromise || this.connect();
   }
-}
 
-// Document-specific WebSocket
-export class DocumentWebSocket extends BaseWebSocket {
-  private pendingMetadataRequest = false;
-
-  constructor(documentId: string) {
-    super(documentId, '/documents/stream');
-  }
-
-  protected connect(): Promise<void> {
-    return super.connect().then(() => {
-      // Send initial metadata request after connection
-      if (!this.pendingMetadataRequest) {
-        this.pendingMetadataRequest = true;
-        this.send('document.metadata', { document_id: this.documentId });
-      }
-    });
-  }
-
-  protected handleReconnect() {
-    this.pendingMetadataRequest = false;
-    super.handleReconnect();
-  }
-}
-
-// Conversation-specific WebSocket
-export class ConversationWebSocket extends BaseWebSocket {
-  constructor(documentId: string) {
-    super(documentId, '/conversations/stream');
-  }
-
-  // Override handleMessage to handle conversation-specific messages
   protected handleMessage(event: MessageEvent) {
     try {
       const message = JSON.parse(event.data);
@@ -248,38 +217,34 @@ export class ConversationWebSocket extends BaseWebSocket {
       } else {
         console.log('No handlers for message type:', type);
       }
-    } catch (error) {
-      console.error('Failed to handle WebSocket message:', error);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error('Error parsing WebSocket message:', error.message);
+      }
     }
   }
+}
 
-  async getMessages(conversationId: string): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const messageType = 'conversation.messages.get';
-      const responseType = 'conversation.messages.get.completed';
-      const errorType = 'conversation.messages.get.error';
+// Document-specific WebSocket
+export class DocumentWebSocket extends BaseWebSocket {
+  private pendingMetadataRequest = false;
 
-      // Set up one-time handler for messages response
-      const handler = (data: any) => {
-        console.log('Messages response:', data);
-        resolve(data);
-        this.off(responseType, handler);
-        this.off(errorType, errorHandler);
-      };
+  constructor(documentId: string) {
+    super(documentId, '/documents/stream');
+  }
 
-      const errorHandler = (data: any) => {
-        console.error('Failed to fetch messages:', data);
-        reject(new Error(data.error || 'Failed to fetch messages'));
-        this.off(responseType, handler);
-        this.off(errorType, errorHandler);
-      };
-
-      // Register handlers
-      this.onMessage(responseType, handler);
-      this.onMessage(errorType, errorHandler);
-
-      // Request messages
-      this.send(messageType, { conversation_id: conversationId });
+  protected connect(): Promise<void> {
+    return super.connect().then(() => {
+      // Send initial metadata request after connection
+      if (!this.pendingMetadataRequest) {
+        this.pendingMetadataRequest = true;
+        this.send('document.metadata', { document_id: this.documentId });
+      }
     });
+  }
+
+  protected handleReconnect() {
+    this.pendingMetadataRequest = false;
+    super.handleReconnect();
   }
 }

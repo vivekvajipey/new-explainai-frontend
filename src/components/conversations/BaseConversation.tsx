@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Send } from 'lucide-react';
 import { ConversationWebSocket } from '@/lib/websocket/ConversationWebSocket';
+import { MessageSendCompleted, MessageSendError } from '@/lib/websocket/types';
 
 export interface Message {
   id: string;
@@ -11,80 +12,81 @@ export interface Message {
 
 export interface BaseConversationProps {
   documentId: string;
-}
-
-export default function BaseConversation({ 
-  documentId,
-  onInitialize,
-  onSendMessage,
-  placeholder = 'Type a message...',
-  className = ''
-}: BaseConversationProps & {
+  websocket: ConversationWebSocket;
   onInitialize: (ws: ConversationWebSocket) => Promise<string>;
   onSendMessage: (ws: ConversationWebSocket, content: string) => Promise<void>;
   placeholder?: string;
   className?: string;
-}) {
+}
+
+export default function BaseConversation({ 
+  documentId,
+  websocket,
+  onInitialize,
+  onSendMessage,
+  placeholder = 'Type a message...',
+  className = ''
+}: BaseConversationProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const websocketRef = useRef<ConversationWebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const initializeConversation = async () => {
       try {
-        if (websocketRef.current) {
-          websocketRef.current.close();
-          websocketRef.current = null;
-        }
-
         setIsLoading(true);
         setError(null);
 
-        const ws = new ConversationWebSocket(documentId);
-        websocketRef.current = ws;
-
         // Initialize using provided method
-        const newConversationId = await onInitialize(ws);
+        const newConversationId = await onInitialize(websocket);
         setConversationId(newConversationId);
 
         // Set up message handlers
-        ws.onMessage('conversation.message.send.completed', (data: { message: string }) => {
-          setMessages(prev => [...prev, {
-            id: Date.now().toString(),
-            role: 'assistant',
-            content: data.message,
-            timestamp: new Date().toISOString()
-          }]);
-          setIsLoading(false);
-        });
+        websocket.onMessage<MessageSendCompleted>(
+          'conversation.message.send.completed', 
+          (data) => {
+            setMessages(prev => [...prev, {
+              id: Date.now().toString(),
+              role: 'assistant',
+              content: data.message,
+              timestamp: new Date().toISOString()
+            }]);
+            setIsLoading(false);
+          }
+        );
 
-        ws.onMessage('conversation.message.send.error', (error: { message: string }) => {
-          setError(error.message || 'Failed to send message');
-          setIsLoading(false);
-        });
+        websocket.onMessage<MessageSendError>(
+          'conversation.message.send.error', 
+          (error) => {
+            setError(error.message || 'Failed to send message');
+            setIsLoading(false);
+          }
+        );
 
         // Try to fetch existing messages
-        ws.getMessages(newConversationId)
-          .then(messagesResponse => {
-            if (messagesResponse?.messages?.length > 0) {
-              setMessages(messagesResponse.messages.map(msg => ({
+        try {
+          const messagesResponse = await websocket.getMessages(newConversationId);
+          if (messagesResponse?.messages?.length > 0) {
+            // Filter out system messages and convert to Message format
+            const filteredMessages = messagesResponse.messages
+              .filter(msg => msg.role !== 'system')
+              .map(msg => ({
                 id: msg.id,
-                role: msg.role === 'system' ? 'assistant' : msg.role,
-                content: msg.message,
-                timestamp: msg.created_at
-              })));
-            }
-          })
-          .catch(() => {
-            console.log('No existing messages');
-          })
-          .finally(() => {
-            setIsLoading(false);
-          });
+                role: msg.role as 'user' | 'assistant',
+                content: msg.content,
+                timestamp: msg.timestamp
+              }));
+            setMessages(filteredMessages);
+          }
+        } catch (err) {
+          // Don't show error for missing messages, it's a normal state
+          console.log('No existing messages, suppressing error:', err);
+        }
+
+        setIsLoading(false);
 
       } catch (error) {
         console.error('Failed to initialize conversation:', error);
@@ -94,20 +96,14 @@ export default function BaseConversation({
     };
 
     initializeConversation();
-
-    return () => {
-      if (websocketRef.current) {
-        websocketRef.current.close();
-      }
-    };
-  }, [documentId, onInitialize]);
+  }, [documentId, onInitialize, websocket]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const sendMessage = async (content: string) => {
-    if (!websocketRef.current || !conversationId) {
+    if (!conversationId) {
       setError('No active conversation');
       return;
     }
@@ -125,11 +121,11 @@ export default function BaseConversation({
       setMessages(prev => [...prev, userMessage]);
       setInput('');
 
-      await onSendMessage(websocketRef.current, content);
+      await onSendMessage(websocket, content);
       
-    } catch (err: any) {
+    } catch (err) {
       console.error('Failed to send message:', err);
-      setError(err.message || 'Failed to send message');
+      setError(err instanceof Error ? err.message : 'Failed to send message');
       setMessages(prev => prev.filter(msg => msg.id !== userMessage.id));
     } finally {
       setIsLoading(false);
