@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, forwardRef, useImperativeHandle } from 'react';
+import { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import { ConversationWebSocket } from '@/lib/websocket/ConversationWebSocket';
 import { ConversationData } from '@/lib/websocket/types';
 import MainConversation from './MainConversation';
@@ -11,35 +11,22 @@ export interface ConversationTabsRef {
 interface ConversationTabsProps {
   documentId: string;
   currentSequence: string;
+  websocket: ConversationWebSocket;
 }
 
 const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
-  ({ documentId, currentSequence }, ref) => {
+  ({ documentId, currentSequence, websocket }, ref) => {
     const [activeTab, setActiveTab] = useState<'main' | string>('main');
     const [chunkConversations, setChunkConversations] = useState<ConversationData[]>([]);
-    const websocketRef = useRef<ConversationWebSocket | null>(null);
     const [error, setError] = useState<string | null>(null);
-
-    // Initialize WebSocket connection
-    useEffect(() => {
-      if (!websocketRef.current) {
-        websocketRef.current = new ConversationWebSocket(documentId);
-      }
-      return () => {
-        if (websocketRef.current) {
-          websocketRef.current.close();
-          websocketRef.current = null;
-        }
-      };
-    }, [documentId]);
 
     // Load chunk conversations when sequence changes
     useEffect(() => {
       const loadChunkConversations = async () => {
-        if (!websocketRef.current) return;
+        if (!websocket) return;
 
         try {
-          const response = await websocketRef.current.getChunkConversations(currentSequence);
+          const response = await websocket.getChunkConversations(currentSequence);
           const conversations = Object.entries(response.conversations).map(([id, data]) => ({
             id,
             type: 'chunk' as const,
@@ -60,13 +47,13 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
     // Expose methods through ref
     useImperativeHandle(ref, () => ({
       createChunkConversation: async (highlightText: string, chunkId: string) => {
-        if (!websocketRef.current) {
+        if (!websocket) {
           setError('WebSocket not initialized');
           return;
         }
 
         try {
-          const conversationId = await websocketRef.current.createChunkConversation(
+          const conversationId = await websocket.createChunkConversation(
             chunkId,
             highlightText
           );
@@ -124,19 +111,23 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
         )}
 
         {/* Active conversation */}
-        {activeTab === 'main' ? (
-          <MainConversation
-            documentId={documentId}
-            currentChunkId={currentSequence}
-            websocket={websocketRef.current!}
-          />
+        {websocket ? (
+          activeTab === 'main' ? (
+            <MainConversation
+              documentId={documentId}
+              currentChunkId={currentSequence}
+              websocket={websocket}
+            />
+          ) : (
+            <ChunkConversation
+              documentId={documentId}
+              chunkId={currentSequence}
+              highlightText={chunkConversations.find(conv => conv.id === activeTab)?.highlightText || ''}
+              websocket={websocket}
+            />
+          )
         ) : (
-          <ChunkConversation
-            documentId={documentId}
-            chunkId={currentSequence}
-            highlightText={chunkConversations.find(conv => conv.id === activeTab)?.highlightText || ''}
-            websocket={websocketRef.current!}
-          />
+          <div>Initializing conversations...</div>
         )}
       </div>
     );

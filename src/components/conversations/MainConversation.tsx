@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ConversationWebSocket } from '@/lib/websocket/ConversationWebSocket';
 import BaseConversation from './BaseConversation';
 
@@ -14,24 +14,20 @@ export default function MainConversation({
   websocket 
 }: MainConversationProps) {
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [initializationAttempted, setInitializationAttempted] = useState(false);
 
-  useEffect(() => {
-    const initialize = async () => {
-      if (!initializationAttempted && !conversationId) {
-        setInitializationAttempted(true);
-        try {
-          const newConversationId = await websocket.createMainConversation();
-          setConversationId(newConversationId);
-        } catch (error) {
-          console.error('Failed to initialize main conversation:', error);
-          // Don't retry automatically - could add a manual retry button if needed
-        }
+  const handleInitialize = async (ws: ConversationWebSocket) => {
+    try {
+      const newConversationId = await ws.createMainConversation();
+      if (!newConversationId) {
+        throw new Error('No conversation ID received');
       }
-    };
-
-    initialize();
-  }, [websocket, initializationAttempted, conversationId]);
+      setConversationId(newConversationId);
+      return newConversationId;
+    } catch (error) {
+      console.error('Failed to create main conversation:', error);
+      throw error;
+    }
+  };
 
   const handleSendMessage = async (ws: ConversationWebSocket, content: string) => {
     if (!conversationId) {
@@ -45,7 +41,7 @@ export default function MainConversation({
     <BaseConversation
       documentId={documentId}
       websocket={websocket}
-      onInitialize={async () => conversationId} // Just return the existing ID
+      onInitialize={handleInitialize}
       onSendMessage={handleSendMessage}
       placeholder="Ask about the entire document..."
     />

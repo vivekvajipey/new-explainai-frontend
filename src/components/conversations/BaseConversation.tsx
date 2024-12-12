@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Send } from 'lucide-react';
 import { ConversationWebSocket } from '@/lib/websocket/ConversationWebSocket';
-import { MessageSendCompleted, MessageSendError } from '@/lib/websocket/types';
 
 export interface Message {
   id: string;
@@ -35,6 +34,8 @@ export default function BaseConversation({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let mounted = true;
+
     const initializeConversation = async () => {
       try {
         setIsLoading(true);
@@ -42,53 +43,40 @@ export default function BaseConversation({
 
         // Initialize using provided method
         const newConversationId = await onInitialize(websocket);
+        if (!mounted) return;
+
+        if (!newConversationId) {
+          throw new Error('Failed to initialize conversation: No conversation ID received');
+        }
+
         setConversationId(newConversationId);
 
-        // Set up message handlers
-        websocket.onMessage<MessageSendCompleted>(
-          'conversation.message.send.completed', 
-          (data) => {
-            setMessages(prev => [...prev, {
-              id: Date.now().toString(),
-              role: 'assistant',
-              content: data.message,
-              timestamp: new Date().toISOString()
-            }]);
-            setIsLoading(false);
-          }
-        );
-
-        websocket.onMessage<MessageSendError>(
-          'conversation.message.send.error', 
-          (error) => {
-            setError(error.message || 'Failed to send message');
-            setIsLoading(false);
-          }
-        );
-
         // Try to fetch existing messages
-        try {
-          const messagesResponse = await websocket.getMessages(newConversationId);
-          if (messagesResponse?.messages?.length > 0) {
-            // Filter out system messages and convert to Message format
-            const filteredMessages = messagesResponse.messages
-              .filter(msg => msg.role !== 'system')
-              .map(msg => ({
-                id: msg.id,
-                role: msg.role as 'user' | 'assistant',
-                content: msg.content,
-                timestamp: msg.timestamp
-              }));
-            setMessages(filteredMessages);
+        if (newConversationId) {
+          try {
+            const messagesResponse = await websocket.getMessages(newConversationId);
+            if (!mounted) return;
+            
+            if (messagesResponse?.messages?.length > 0) {
+              // Filter out system messages and convert to Message format
+              const filteredMessages = messagesResponse.messages
+                .filter(msg => msg.role !== 'system')
+                .map(msg => ({
+                  id: msg.id,
+                  role: msg.role as 'user' | 'assistant',
+                  content: msg.content,
+                  timestamp: msg.timestamp
+                }));
+              setMessages(filteredMessages);
+            }
+          } catch (err) {
+            console.log('No existing messages for new conversation: ', err);
           }
-        } catch (err) {
-          // Don't show error for missing messages, it's a normal state
-          console.log('No existing messages, suppressing error:', err);
         }
 
         setIsLoading(false);
-
       } catch (error) {
+        if (!mounted) return;
         console.error('Failed to initialize conversation:', error);
         setError('Failed to initialize conversation');
         setIsLoading(false);
@@ -96,7 +84,11 @@ export default function BaseConversation({
     };
 
     initializeConversation();
-  }, [documentId, onInitialize, websocket]);
+
+    return () => {
+      mounted = false;
+    };
+  }, [documentId, onInitialize]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

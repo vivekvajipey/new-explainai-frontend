@@ -2,6 +2,7 @@
 
 import { useEffect, useState, use, useRef } from 'react';
 import { DocumentWebSocket } from '@/lib/api';
+import { ConversationWebSocket } from '@/lib/websocket/ConversationWebSocket';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import ConversationTabs from '@/components/conversations/ConversationTabs';
 import TextSelectionPopup from '@/components/TextSelectionPopup';
@@ -28,77 +29,43 @@ interface DocumentMetadata {
   };
 }
 
-interface MetadataResponse {
+interface DocumentMetadataResponse {
   document: DocumentMetadata;
 }
 
 export default function DocumentPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const documentWsRef = useRef<DocumentWebSocket | null>(null);
+  const conversationWsRef = useRef<ConversationWebSocket | null>(null);
   const [metadata, setMetadata] = useState<DocumentMetadata | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [retryCount, setRetryCount] = useState(0);
-  const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
+  const [documentReady, setDocumentReady] = useState(false);
   const conversationTabsRef = useRef<ConversationTabsRef>(null);
+  const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
 
   useEffect(() => {
-    let websocket: DocumentWebSocket | null = null;
-    let timeoutId: NodeJS.Timeout;
-
-    const initializeWebSocket = () => {
-      try {
-        if (websocket) {
-          websocket.close();
+    if (!documentWsRef.current) {
+      documentWsRef.current = new DocumentWebSocket(id);
+      documentWsRef.current.onMessage(
+        'document.metadata.completed',
+        (data) => {
+          const metadataResponse = data as DocumentMetadataResponse;
+          setMetadata(metadataResponse.document);
+          setDocumentReady(true);
         }
-        
-        websocket = new DocumentWebSocket(id);
-
-        websocket.onMessage('document.metadata.completed', ((data: unknown) => {
-          console.log('Received metadata:', data);
-          const metadataResponse = data as MetadataResponse;
-          if (metadataResponse?.document) {
-            setMetadata(metadataResponse.document);
-            setError(null);
-            setIsLoading(false);
-            clearTimeout(timeoutId);
-          } else {
-            setError('Invalid metadata response');
-            setIsLoading(false);
-          }
-        }));
-
-        timeoutId = setTimeout(() => {
-          if (!metadata) {
-            setError('Failed to load document metadata. Please try again.');
-            setIsLoading(false);
-            if (retryCount < 3) {
-              setRetryCount(prev => prev + 1);
-              initializeWebSocket();
-            }
-          }
-        }, 10000);
-      } catch (error) {
-        console.error('WebSocket initialization error:', error);
-        setError('Failed to connect to server');
-        setIsLoading(false);
-      }
-    };
-
-    initializeWebSocket();
+      );
+    }
+    
+    if (!conversationWsRef.current) {
+      conversationWsRef.current = new ConversationWebSocket(id);
+    }
 
     return () => {
-      clearTimeout(timeoutId);
-      if (websocket) {
-        websocket.close();
-      }
+      documentWsRef.current?.close();
+      conversationWsRef.current?.close();
+      documentWsRef.current = null;
+      conversationWsRef.current = null;
     };
-  }, [id, retryCount, metadata]);
-
-  const handleRetry = () => {
-    setIsLoading(true);
-    setError(null);
-    setRetryCount(prev => prev + 1);
-  };
+  }, [id]);
 
   const handlePreviousChunk = () => {
     if (currentChunkIndex > 0) {
@@ -121,32 +88,10 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
     );
   };
 
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <div className="text-red-500">{error}</div>
-        <button 
-          onClick={handleRetry}
-          className="px-4 py-2 bg-earth-800 text-earth-50 rounded-lg hover:bg-earth-700 transition-colors"
-        >
-          Retry
-        </button>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-pulse text-earth-600">Loading document...</div>
-      </div>
-    );
-  }
-
   if (!metadata) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-red-500">No document data available</div>
+        <div className="animate-pulse text-earth-600">Loading document...</div>
       </div>
     );
   }
@@ -199,14 +144,17 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
           <TextSelectionPopup onCreateDiscussion={handleCreateDiscussion} />
         </div>
 
-        {/* Conversations */}
-        <div className="h-[600px]">
-          <ConversationTabs 
-            ref={conversationTabsRef}
-            documentId={id}
-            currentSequence={currentChunkIndex.toString()}
-          />
-        </div>
+        {/* Conversations - Only render when document is ready */}
+        {documentReady && conversationWsRef.current && (
+          <div className="h-[600px]">
+            <ConversationTabs 
+              ref={conversationTabsRef}
+              documentId={id}
+              currentSequence={currentChunkIndex.toString()}
+              websocket={conversationWsRef.current}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
