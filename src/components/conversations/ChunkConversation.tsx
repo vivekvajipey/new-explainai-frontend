@@ -24,7 +24,7 @@ export default function ChunkConversation({
   };
 
   const handleSendMessage = async (ws: ConversationWebSocket, content: string) => {
-    await ws.sendMessage(conversationId!, content);
+    return ws.sendMessage(conversationId!, content, chunkId, "highlight");
   };
 
   if (!websocket) {

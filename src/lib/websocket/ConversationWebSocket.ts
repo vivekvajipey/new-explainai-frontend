@@ -126,21 +126,13 @@ export class ConversationWebSocket {
     }
     this.eventHandlers.get(event)?.add(handler as MessageHandler<unknown>);
     console.log('ConversationWebSocket: Registered handler for', event);
-
-    // Process any pending messages for this handler
-    const matchingMessages = this.pendingMessages.filter(msg => msg.type === event);
-    matchingMessages.forEach(msg => {
-      handler(msg.data as T);
-      this.pendingMessages = this.pendingMessages.filter(m => m !== msg);
-    });
   }
 
-  private off<T>(event: string, handler: MessageHandler<T>): void {
+  public removeHandler<T>(event: string, handler: MessageHandler<T>): void {
     this.eventHandlers.get(event)?.delete(handler as MessageHandler<unknown>);
     if (this.eventHandlers.get(event)?.size === 0) {
       this.eventHandlers.delete(event);
     }
-    console.log('ConversationWebSocket: Removed handler for', event);
   }
 
   private processPendingMessages(): void {
@@ -166,14 +158,14 @@ export class ConversationWebSocket {
     return new Promise((resolve, reject) => {
       const handler: MessageHandler<ConversationCreateCompleted> = (data) => {
         resolve(data.conversation_id);
-        this.off('conversation.main.create.completed', handler);
-        this.off('conversation.main.create.error', errorHandler);
+        this.removeHandler('conversation.main.create.completed', handler);
+        this.removeHandler('conversation.main.create.error', errorHandler);
       };
 
       const errorHandler: MessageHandler<ConversationCreateError> = (error) => {
         reject(new Error(error.message || 'Failed to create conversation'));
-        this.off('conversation.main.create.completed', handler);
-        this.off('conversation.main.create.error', errorHandler);
+        this.removeHandler('conversation.main.create.completed', handler);
+        this.removeHandler('conversation.main.create.error', errorHandler);
       };
 
       this.onMessage('conversation.main.create.completed', handler);
@@ -184,8 +176,8 @@ export class ConversationWebSocket {
       });
 
       setTimeout(() => {
-        this.off('conversation.main.create.completed', handler);
-        this.off('conversation.main.create.error', errorHandler);
+        this.removeHandler('conversation.main.create.completed', handler);
+        this.removeHandler('conversation.main.create.error', errorHandler);
         reject(new Error('Timeout creating conversation'));
       }, 10000);
     });
@@ -197,14 +189,14 @@ export class ConversationWebSocket {
     return new Promise((resolve, reject) => {
       const handler: MessageHandler<ConversationCreateCompleted> = (data) => {
         resolve(data.conversation_id);
-        this.off<ConversationCreateCompleted>('conversation.chunk.create.completed', handler);
-        this.off<ConversationCreateError>('conversation.chunk.create.error', errorHandler);
+        this.removeHandler<ConversationCreateCompleted>('conversation.chunk.create.completed', handler);
+        this.removeHandler<ConversationCreateError>('conversation.chunk.create.error', errorHandler);
       };
 
       const errorHandler: MessageHandler<ConversationCreateError> = (error) => {
         reject(new Error(error.message || 'Failed to create chunk conversation'));
-        this.off<ConversationCreateCompleted>('conversation.chunk.create.completed', handler);
-        this.off<ConversationCreateError>('conversation.chunk.create.error', errorHandler);
+        this.removeHandler<ConversationCreateCompleted>('conversation.chunk.create.completed', handler);
+        this.removeHandler<ConversationCreateError>('conversation.chunk.create.error', errorHandler);
       };
 
       this.onMessage<ConversationCreateCompleted>('conversation.chunk.create.completed', handler);
@@ -217,27 +209,27 @@ export class ConversationWebSocket {
       });
 
       setTimeout(() => {
-        this.off<ConversationCreateCompleted>('conversation.chunk.create.completed', handler);
-        this.off<ConversationCreateError>('conversation.chunk.create.error', errorHandler);
+        this.removeHandler<ConversationCreateCompleted>('conversation.chunk.create.completed', handler);
+        this.removeHandler<ConversationCreateError>('conversation.chunk.create.error', errorHandler);
         reject(new Error('Timeout creating chunk conversation'));
       }, 10000);
     });
   }
 
-  async sendMessage(conversationId: string, content: string, chunkId?: string): Promise<void> {
+  async sendMessage(conversationId: string, content: string, chunkId?: string, conversationType?: string): Promise<ConversationMessageSendCompleted> {
     await this.waitForConnection();
 
     return new Promise((resolve, reject) => {
-      const handler: MessageHandler<ConversationMessageSendCompleted> = () => {
-        resolve();
-        this.off<ConversationMessageSendCompleted>('conversation.message.send.completed', handler);
-        this.off<WebSocketError>('conversation.message.send.error', errorHandler);
+      const handler: MessageHandler<ConversationMessageSendCompleted> = (data) => {
+        resolve(data);
+        this.removeHandler<ConversationMessageSendCompleted>('conversation.message.send.completed', handler);
+        this.removeHandler<WebSocketError>('conversation.message.send.error', errorHandler);
       };
 
       const errorHandler: MessageHandler<WebSocketError> = (error) => {
         reject(new Error(error.message || 'Failed to send message'));
-        this.off<ConversationMessageSendCompleted>('conversation.message.send.completed', handler);
-        this.off<WebSocketError>('conversation.message.send.error', errorHandler);
+        this.removeHandler<ConversationMessageSendCompleted>('conversation.message.send.completed', handler);
+        this.removeHandler<WebSocketError>('conversation.message.send.error', errorHandler);
       };
 
       this.onMessage<ConversationMessageSendCompleted>('conversation.message.send.completed', handler);
@@ -245,13 +237,14 @@ export class ConversationWebSocket {
 
       this.send('conversation.message.send', {
         conversation_id: conversationId,
-        content,
-        ...(chunkId && { chunk_id: chunkId })
+        content: content,
+        chunk_id: chunkId,
+        conversation_type: conversationType
       });
 
       setTimeout(() => {
-        this.off<ConversationMessageSendCompleted>('conversation.message.send.completed', handler);
-        this.off<WebSocketError>('conversation.message.send.error', errorHandler);
+        this.removeHandler<ConversationMessageSendCompleted>('conversation.message.send.completed', handler);
+        this.removeHandler<WebSocketError>('conversation.message.send.error', errorHandler);
         reject(new Error('Timeout sending message'));
       }, 30000);
     });
@@ -261,12 +254,7 @@ export class ConversationWebSocket {
     await this.waitForConnection();
 
     return new Promise((resolve, reject) => {
-      let isResolved = false;
-
       const handler: MessageHandler<ConversationMessagesCompleted> = (data) => {
-        if (isResolved) return;
-        isResolved = true;
-
         const transformedData: ConversationResponse = {
           conversation_id: data.conversation_id,
           messages: data.messages.map(msg => ({
@@ -276,33 +264,19 @@ export class ConversationWebSocket {
             timestamp: msg.created_at
           }))
         };
-        
         resolve(transformedData);
-        this.off<ConversationMessagesCompleted>('conversation.messages.completed', handler);
-        this.off<WebSocketError>('conversation.messages.error', errorHandler);
       };
 
       const errorHandler: MessageHandler<WebSocketError> = (error) => {
-        if (isResolved) return;
-        isResolved = true;
-
         reject(new Error(error.message || 'Failed to get messages'));
-        this.off<ConversationMessagesCompleted>('conversation.messages.completed', handler);
-        this.off<WebSocketError>('conversation.messages.error', errorHandler);
       };
 
-      this.onMessage<ConversationMessagesCompleted>('conversation.messages.completed', handler);
-      this.onMessage<WebSocketError>('conversation.messages.error', errorHandler);
+      this.onMessage('conversation.messages.completed', handler);
+      this.onMessage('conversation.messages.error', errorHandler);
 
       this.send('conversation.messages.list', {
         conversation_id: conversationId
       });
-
-      setTimeout(() => {
-        this.off<ConversationMessagesCompleted>('conversation.messages.completed', handler);
-        this.off<WebSocketError>('conversation.messages.error', errorHandler);
-        reject(new Error('No messages yet'));
-      }, 10000);
     });
   }
 
@@ -312,14 +286,14 @@ export class ConversationWebSocket {
     return new Promise((resolve, reject) => {
       const handler: MessageHandler<ConversationChunkGetCompleted> = (data) => {
         resolve(data);
-        this.off<ConversationChunkGetCompleted>('conversation.chunk.get.completed', handler);
-        this.off<WebSocketError>('conversation.chunk.get.error', errorHandler);
+        this.removeHandler<ConversationChunkGetCompleted>('conversation.chunk.get.completed', handler);
+        this.removeHandler<WebSocketError>('conversation.chunk.get.error', errorHandler);
       };
 
       const errorHandler: MessageHandler<WebSocketError> = (error) => {
         reject(new Error(error.message || 'Failed to get conversations'));
-        this.off<ConversationChunkGetCompleted>('conversation.chunk.get.completed', handler);
-        this.off<WebSocketError>('conversation.chunk.get.error', errorHandler);
+        this.removeHandler<ConversationChunkGetCompleted>('conversation.chunk.get.completed', handler);
+        this.removeHandler<WebSocketError>('conversation.chunk.get.error', errorHandler);
       };
 
       this.onMessage<ConversationChunkGetCompleted>('conversation.chunk.get.completed', handler);
@@ -330,8 +304,8 @@ export class ConversationWebSocket {
       });
 
       setTimeout(() => {
-        this.off<ConversationChunkGetCompleted>('conversation.chunk.get.completed', handler);
-        this.off<WebSocketError>('conversation.chunk.get.error', errorHandler);
+        this.removeHandler<ConversationChunkGetCompleted>('conversation.chunk.get.completed', handler);
+        this.removeHandler<WebSocketError>('conversation.chunk.get.error', errorHandler);
         reject(new Error('Timeout getting conversations'));
       }, 5000);
     });

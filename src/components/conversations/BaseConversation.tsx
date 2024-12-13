@@ -13,7 +13,7 @@ export interface BaseConversationProps {
   documentId: string;
   websocket: ConversationWebSocket;
   onInitialize: (ws: ConversationWebSocket) => Promise<string>;
-  onSendMessage: (ws: ConversationWebSocket, content: string) => Promise<void>;
+  onSendMessage: (ws: ConversationWebSocket, content: string) => Promise<{ message: string }>;
   placeholder?: string;
   className?: string;
 }
@@ -88,7 +88,7 @@ export default function BaseConversation({
     return () => {
       mounted = false;
     };
-  }, [documentId, onInitialize]);
+  }, [documentId, websocket]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -113,7 +113,16 @@ export default function BaseConversation({
       setMessages(prev => [...prev, userMessage]);
       setInput('');
 
-      await onSendMessage(websocket, content);
+      const response = await onSendMessage(websocket, content);
+
+      if (response && response.message) {
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: response.message,
+          timestamp: new Date().toISOString(),
+        }]);
+      }
       
     } catch (err) {
       console.error('Failed to send message:', err);

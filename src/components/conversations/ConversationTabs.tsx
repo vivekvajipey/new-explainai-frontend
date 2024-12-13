@@ -46,12 +46,11 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
       return () => {
         isMounted = false;
       };
-    }, [websocket]);
+    }, []);
 
     // Load chunk conversations when sequence changes
     useEffect(() => {
       let isMounted = true;
-      let pollTimeout: NodeJS.Timeout;
 
       const loadChunkConversations = async () => {
         try {
@@ -69,11 +68,6 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
         } catch (error) {
           console.error('Failed to load chunk conversations:', error);
         }
-
-        // Poll again in 5 seconds if component is still mounted
-        if (isMounted) {
-          pollTimeout = setTimeout(loadChunkConversations, 5000);
-        }
       };
 
       if (websocket) {
@@ -82,9 +76,8 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
 
       return () => {
         isMounted = false;
-        clearTimeout(pollTimeout);
       };
-    }, [currentSequence, websocket]);
+    }, [currentSequence]);
 
     // Expose methods through ref
     useImperativeHandle(ref, () => ({

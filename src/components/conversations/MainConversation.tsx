@@ -19,7 +19,7 @@ export default function MainConversation({
   };
 
   const handleSendMessage = async (ws: ConversationWebSocket, content: string) => {
-    await ws.sendMessage(conversationId, content, currentChunkId);
+    return ws.sendMessage(conversationId, content, currentChunkId, "main");
   };
 
   return (
