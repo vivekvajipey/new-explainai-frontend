@@ -15,12 +15,12 @@ export interface ConversationData {
 
 export interface ConversationResponse {
   conversation_id: string;
-  messages: Array<{
+  messages: {
     id: string;
-    role: 'user' | 'assistant' | 'system';
+    role: string;
     content: string;
     timestamp: string;
-  }>;
+  }[];
 }
 
 export interface ChunkConversationsResponse {
@@ -71,4 +71,9 @@ export interface ConversationChunkGetCompleted {
     chunk_id: string;
     highlight_text: string;
   }>;
+}
+
+export interface WebSocketMessage {
+  type: string;
+  data: unknown;
 } 

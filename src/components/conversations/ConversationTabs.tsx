@@ -19,30 +19,72 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
     const [activeTab, setActiveTab] = useState<'main' | string>('main');
     const [chunkConversations, setChunkConversations] = useState<ConversationData[]>([]);
     const [error, setError] = useState<string | null>(null);
+    const [mainConversationId, setMainConversationId] = useState<string | null>(null);
 
-    // Load chunk conversations when sequence changes
+    // Create main conversation once when component mounts
     useEffect(() => {
-      const loadChunkConversations = async () => {
-        if (!websocket) return;
+      let isMounted = true;
 
+      const initMainConversation = async () => {
         try {
-          const response = await websocket.getChunkConversations(currentSequence);
-          const conversations = Object.entries(response.conversations).map(([id, data]) => ({
-            id,
-            type: 'chunk' as const,
-            chunkId: data.chunk_id,
-            highlightText: data.highlight_text,
-            messages: []
-          }));
-          setChunkConversations(conversations);
+          const conversationId = await websocket.createMainConversation();
+          if (isMounted) {
+            setMainConversationId(conversationId);
+          }
         } catch (error) {
-          console.error('Failed to load chunk conversations:', error);
-          // Don't show error for missing conversations
+          console.error('Failed to create main conversation:', error);
+          if (isMounted) {
+            setError('Failed to create conversation');
+          }
         }
       };
 
-      loadChunkConversations();
-    }, [currentSequence]);
+      if (websocket && !mainConversationId) {
+        initMainConversation();
+      }
+
+      return () => {
+        isMounted = false;
+      };
+    }, [websocket]);
+
+    // Load chunk conversations when sequence changes
+    useEffect(() => {
+      let isMounted = true;
+      let pollTimeout: NodeJS.Timeout;
+
+      const loadChunkConversations = async () => {
+        try {
+          const response = await websocket.getChunkConversations(currentSequence);
+          if (isMounted) {
+            const conversations = Object.entries(response.conversations).map(([id, data]) => ({
+              id,
+              type: 'chunk' as const,
+              chunkId: data.chunk_id,
+              highlightText: data.highlight_text,
+              messages: []
+            }));
+            setChunkConversations(conversations);
+          }
+        } catch (error) {
+          console.error('Failed to load chunk conversations:', error);
+        }
+
+        // Poll again in 5 seconds if component is still mounted
+        if (isMounted) {
+          pollTimeout = setTimeout(loadChunkConversations, 5000);
+        }
+      };
+
+      if (websocket) {
+        loadChunkConversations();
+      }
+
+      return () => {
+        isMounted = false;
+        clearTimeout(pollTimeout);
+      };
+    }, [currentSequence, websocket]);
 
     // Expose methods through ref
     useImperativeHandle(ref, () => ({
@@ -111,10 +153,11 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
         )}
 
         {/* Active conversation */}
-        {websocket ? (
+        {websocket && mainConversationId ? (
           activeTab === 'main' ? (
             <MainConversation
               documentId={documentId}
+              conversationId={mainConversationId}
               currentChunkId={currentSequence}
               websocket={websocket}
             />
