@@ -30,10 +30,6 @@ export interface ChunkConversationsResponse {
   }>;
 }
 
-export interface MessageSendCompleted {
-  message: string;
-}
-
 export interface MessageSendError {
   message: string;
 }
@@ -76,4 +72,4 @@ export interface ConversationChunkGetCompleted {
 export interface WebSocketMessage {
   type: string;
   data: unknown;
-} 
+}

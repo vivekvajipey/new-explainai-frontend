@@ -1,71 +1,45 @@
 'use client';
 
-import { useEffect, useState, use, useRef } from 'react';
-import { DocumentWebSocket } from '@/lib/api';
-import { ConversationWebSocket } from '@/lib/websocket/ConversationWebSocket';
+import { useEffect, useState, useRef, use } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import ConversationTabs from '@/components/conversations/ConversationTabs';
 import TextSelectionPopup from '@/components/TextSelectionPopup';
 import { ConversationTabsRef } from '@/components/conversations/ConversationTabs';
+import { SocketProvider, useSocket } from '@/contexts/SocketContext';
+import { DocumentMetadata, DocumentMetadataResponse } from './types';
 
-interface DocumentChunk {
-  id: string;
-  sequence: number;
-  content: string;
-  meta_data: {
-    length: number;
-    index: number;
-  };
+export default function DocumentPage({ 
+  params 
+}: { 
+  params: Promise<{ id: string }> 
+}) {
+  const { id } = use(params); // This resolves the Promise
+
+  return (
+    <SocketProvider documentId={id}>
+      <DocumentPageContent id={id} />
+    </SocketProvider>
+  );
 }
 
-interface DocumentMetadata {
-  title: string;
-  pages: number;
-  text: string;
-  content?: string;
-  chunks: DocumentChunk[];
-  meta_data: {
-    chunks_count: number;
-  };
-}
-
-interface DocumentMetadataResponse {
-  document: DocumentMetadata;
-}
-
-export default function DocumentPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
-  const documentWsRef = useRef<DocumentWebSocket | null>(null);
-  const conversationWsRef = useRef<ConversationWebSocket | null>(null);
+function DocumentPageContent({ id }: { id: string }) {
+  const { documentSocket, isConnected } = useSocket();
   const [metadata, setMetadata] = useState<DocumentMetadata | null>(null);
-  const [documentReady, setDocumentReady] = useState(false);
   const conversationTabsRef = useRef<ConversationTabsRef>(null);
   const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
 
   useEffect(() => {
-    if (!documentWsRef.current) {
-      documentWsRef.current = new DocumentWebSocket(id);
-      documentWsRef.current.onMessage(
-        'document.metadata.completed',
-        (data) => {
-          const metadataResponse = data as DocumentMetadataResponse;
-          setMetadata(metadataResponse.document);
-          setDocumentReady(true);
-        }
-      );
-    }
-    
-    if (!conversationWsRef.current) {
-      conversationWsRef.current = new ConversationWebSocket(id);
-    }
+    if (!documentSocket || !isConnected) return;
 
-    return () => {
-      documentWsRef.current?.close();
-      conversationWsRef.current?.close();
-      documentWsRef.current = null;
-      conversationWsRef.current = null;
-    };
-  }, [id]);
+    documentSocket.onMessage(
+      'document.metadata.completed',
+      (data) => {
+        const metadataResponse = data as DocumentMetadataResponse;
+        console.log('Received metadata:', metadataResponse);
+        setMetadata(metadataResponse.document);
+      }
+    );
+  }, [documentSocket, isConnected]);
 
   const handlePreviousChunk = () => {
     if (currentChunkIndex > 0) {
@@ -88,10 +62,12 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
     );
   };
 
-  if (!metadata) {
+  if (!metadata || !isConnected) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-pulse text-earth-600">Loading document...</div>
+        <div className="animate-pulse text-earth-600">
+          {!isConnected ? 'Connecting...' : 'Loading document...'}
+        </div>
       </div>
     );
   }
@@ -145,14 +121,18 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
         </div>
 
         {/* Conversations - Only render when document is ready */}
-        {documentReady && conversationWsRef.current && (
+        {isConnected && (
           <div className="h-[600px]">
             <ConversationTabs 
               ref={conversationTabsRef}
               documentId={id}
               currentSequence={currentChunkIndex.toString()}
-              websocket={conversationWsRef.current}
             />
+          </div>
+        )}
+        {!isConnected && (
+          <div className="text-earth-500 text-center">
+            Connecting...
           </div>
         )}
       </div>

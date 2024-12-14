@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Send } from 'lucide-react';
-import { ConversationWebSocket } from '@/lib/websocket/ConversationWebSocket';
+import { useSocket } from '@/contexts/SocketContext';
 
 export interface Message {
   id: string;
@@ -11,21 +11,20 @@ export interface Message {
 
 export interface BaseConversationProps {
   documentId: string;
-  websocket: ConversationWebSocket;
-  onInitialize: (ws: ConversationWebSocket) => Promise<string>;
-  onSendMessage: (ws: ConversationWebSocket, content: string) => Promise<{ message: string }>;
+  onInitialize: () => Promise<string>;
+  onSendMessage: (content: string) => Promise<{ message: string }>;
   placeholder?: string;
   className?: string;
 }
 
 export default function BaseConversation({ 
   documentId,
-  websocket,
   onInitialize,
   onSendMessage,
   placeholder = 'Type a message...',
   className = ''
 }: BaseConversationProps) {
+  const { conversationSocket } = useSocket();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -34,16 +33,14 @@ export default function BaseConversation({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let mounted = true;
-
+    if (!conversationSocket) return;
     const initializeConversation = async () => {
       try {
         setIsLoading(true);
         setError(null);
 
         // Initialize using provided method
-        const newConversationId = await onInitialize(websocket);
-        if (!mounted) return;
+        const newConversationId = await onInitialize();
 
         if (!newConversationId) {
           throw new Error('Failed to initialize conversation: No conversation ID received');
@@ -54,8 +51,7 @@ export default function BaseConversation({
         // Try to fetch existing messages
         if (newConversationId) {
           try {
-            const messagesResponse = await websocket.getMessages(newConversationId);
-            if (!mounted) return;
+            const messagesResponse = await conversationSocket.getMessages(newConversationId);
             
             if (messagesResponse?.messages?.length > 0) {
               // Filter out system messages and convert to Message format
@@ -76,7 +72,6 @@ export default function BaseConversation({
 
         setIsLoading(false);
       } catch (error) {
-        if (!mounted) return;
         console.error('Failed to initialize conversation:', error);
         setError('Failed to initialize conversation');
         setIsLoading(false);
@@ -85,10 +80,7 @@ export default function BaseConversation({
 
     initializeConversation();
 
-    return () => {
-      mounted = false;
-    };
-  }, [documentId, websocket]);
+  }, [documentId, conversationSocket]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -113,7 +105,9 @@ export default function BaseConversation({
       setMessages(prev => [...prev, userMessage]);
       setInput('');
 
-      const response = await onSendMessage(websocket, content);
+      if (!conversationSocket) return;
+
+      const response = await onSendMessage(content);
 
       if (response && response.message) {
         setMessages(prev => [...prev, {

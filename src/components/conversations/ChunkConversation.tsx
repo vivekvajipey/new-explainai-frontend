@@ -1,44 +1,57 @@
-import { ConversationWebSocket } from '@/lib/websocket/ConversationWebSocket';
+// ChunkConversation.tsx
 import BaseConversation from './BaseConversation';
 import { useState } from 'react';
+import { useSocket } from '@/contexts/SocketContext';
 
 interface ChunkConversationProps {
   documentId: string;
   chunkId: string;
   highlightText: string;
-  websocket: ConversationWebSocket | null;
 }
 
 export default function ChunkConversation({ 
   documentId, 
   chunkId,
   highlightText,
-  websocket
 }: ChunkConversationProps) {
+  const { conversationSocket } = useSocket();
   const [conversationId, setConversationId] = useState<string | null>(null);
   
-  const handleInitialize = async (ws: ConversationWebSocket) => {
-    const newConversationId = await ws.createChunkConversation(chunkId, highlightText);
+  const handleInitialize = async () => {
+    if (!conversationSocket) {
+      throw new Error('WebSocket not connected');
+    }
+
+    const newConversationId = await conversationSocket.createChunkConversation(
+      chunkId, 
+      highlightText
+    );
     setConversationId(newConversationId);
     return newConversationId;
   };
 
-  const handleSendMessage = async (ws: ConversationWebSocket, content: string) => {
-    return ws.sendMessage(conversationId!, content, chunkId, "highlight");
+  const handleSendMessage = async (content: string) => {
+    if (!conversationSocket || !conversationId) {
+      throw new Error('No active conversation');
+    }
+  
+    const response = await conversationSocket.sendMessage(
+      conversationId, 
+      content, 
+      chunkId, 
+      "highlight"
+    );
+  
+    return { message: response.message };
   };
-
-  if (!websocket) {
-    return <div>Loading...</div>;
-  }
 
   return (
     <BaseConversation
       documentId={documentId}
-      websocket={websocket}
       onInitialize={handleInitialize}
       onSendMessage={handleSendMessage}
       placeholder="Ask about this highlighted text..."
       className="border-2 border-yellow-200"
     />
   );
-} 
+}

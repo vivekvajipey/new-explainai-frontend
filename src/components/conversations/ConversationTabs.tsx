@@ -1,8 +1,8 @@
 import { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
-import { ConversationWebSocket } from '@/lib/websocket/ConversationWebSocket';
 import { ConversationData } from '@/lib/websocket/types';
 import MainConversation from './MainConversation';
 import ChunkConversation from './ChunkConversation';
+import { useSocket } from '@/contexts/SocketContext';
 
 export interface ConversationTabsRef {
   createChunkConversation: (highlightText: string, chunkId: string) => void;
@@ -11,84 +11,70 @@ export interface ConversationTabsRef {
 interface ConversationTabsProps {
   documentId: string;
   currentSequence: string;
-  websocket: ConversationWebSocket;
 }
 
 const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
-  ({ documentId, currentSequence, websocket }, ref) => {
+  ({ documentId, currentSequence }, ref) => {
+    const { conversationSocket } = useSocket();
     const [activeTab, setActiveTab] = useState<'main' | string>('main');
     const [chunkConversations, setChunkConversations] = useState<ConversationData[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [mainConversationId, setMainConversationId] = useState<string | null>(null);
 
-    // Create main conversation once when component mounts
     useEffect(() => {
-      let isMounted = true;
-
+      if (!conversationSocket) return;
+      
       const initMainConversation = async () => {
         try {
-          const conversationId = await websocket.createMainConversation();
-          if (isMounted) {
-            setMainConversationId(conversationId);
-          }
+          const conversationId = await conversationSocket.createMainConversation();
+          setMainConversationId(conversationId);
         } catch (error) {
           console.error('Failed to create main conversation:', error);
-          if (isMounted) {
-            setError('Failed to create conversation');
-          }
+          setError('Failed to create conversation');
         }
       };
 
-      if (websocket && !mainConversationId) {
+      if (!mainConversationId) {
         initMainConversation();
       }
-
-      return () => {
-        isMounted = false;
-      };
-    }, []);
+    }, [conversationSocket, mainConversationId]);
 
     // Load chunk conversations when sequence changes
     useEffect(() => {
-      let isMounted = true;
+      if (!conversationSocket) return;
 
       const loadChunkConversations = async () => {
         try {
-          const response = await websocket.getChunkConversations(currentSequence);
-          if (isMounted) {
-            const conversations = Object.entries(response.conversations).map(([id, data]) => ({
-              id,
-              type: 'chunk' as const,
-              chunkId: data.chunk_id,
-              highlightText: data.highlight_text,
-              messages: []
-            }));
-            setChunkConversations(conversations);
-          }
+          const response = await conversationSocket.getChunkConversations(currentSequence);
+          const conversations = Object.entries(response.conversations).map(([id, data]) => ({
+            id,
+            type: 'chunk' as const,
+            chunkId: data.chunk_id,
+            highlightText: data.highlight_text,
+            messages: []
+          }));
+          setChunkConversations(conversations);
         } catch (error) {
           console.error('Failed to load chunk conversations:', error);
         }
       };
 
-      if (websocket) {
+      if (conversationSocket) {
         loadChunkConversations();
       }
 
-      return () => {
-        isMounted = false;
-      };
     }, [currentSequence]);
 
     // Expose methods through ref
     useImperativeHandle(ref, () => ({
       createChunkConversation: async (highlightText: string, chunkId: string) => {
-        if (!websocket) {
+        if (!conversationSocket) {
           setError('WebSocket not initialized');
           return;
         }
 
         try {
-          const conversationId = await websocket.createChunkConversation(
+          const conversationId = await conversationSocket.createChunkConversation(
             chunkId,
             highlightText
           );
@@ -146,20 +132,18 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
         )}
 
         {/* Active conversation */}
-        {websocket && mainConversationId ? (
+        {conversationSocket && mainConversationId ? (
           activeTab === 'main' ? (
             <MainConversation
               documentId={documentId}
               conversationId={mainConversationId}
               currentChunkId={currentSequence}
-              websocket={websocket}
             />
           ) : (
             <ChunkConversation
               documentId={documentId}
               chunkId={currentSequence}
               highlightText={chunkConversations.find(conv => conv.id === activeTab)?.highlightText || ''}
-              websocket={websocket}
             />
           )
         ) : (

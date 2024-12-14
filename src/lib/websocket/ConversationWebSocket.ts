@@ -6,10 +6,8 @@ import {
   WebSocketError,
   MessageHandler,
   ConversationCreateCompleted,
-  ConversationCreateError,
   ConversationMessageSendCompleted,
   ConversationMessagesCompleted,
-  ConversationChunkGetCompleted,
 } from './types';
 
 const WS_BASE_URL = 'ws://localhost:8000/api';
@@ -151,164 +149,102 @@ export class ConversationWebSocket {
     await this.connectionPromise;
   }
 
-  // Public API methods
-  async createMainConversation(): Promise<string> {
+  private async sendAndWait<T>(
+    requestType: string,
+    responseType: string,
+    data: unknown,
+    timeout: number = 10000
+  ): Promise<T> {
     await this.waitForConnection();
-    
+
     return new Promise((resolve, reject) => {
-      const handler: MessageHandler<ConversationCreateCompleted> = (data) => {
-        resolve(data.conversation_id);
-        this.removeHandler('conversation.main.create.completed', handler);
-        this.removeHandler('conversation.main.create.error', errorHandler);
+      const handler = (data: T) => {
+        resolve(data);
+        this.removeHandler(responseType, handler);
+        this.removeHandler(`${responseType}.error`, errorHandler);
       };
 
-      const errorHandler: MessageHandler<ConversationCreateError> = (error) => {
-        reject(new Error(error.message || 'Failed to create conversation'));
-        this.removeHandler('conversation.main.create.completed', handler);
-        this.removeHandler('conversation.main.create.error', errorHandler);
+      const errorHandler = (error: WebSocketError) => {
+        reject(new Error(error.message || `Failed during ${requestType}`));
+        this.removeHandler(responseType, handler);
+        this.removeHandler(`${responseType}.error`, errorHandler);
       };
 
-      this.onMessage('conversation.main.create.completed', handler);
-      this.onMessage('conversation.main.create.error', errorHandler);
+      this.onMessage(responseType, handler);
+      this.onMessage(`${responseType}.error`, errorHandler);
 
-      this.send('conversation.main.create', {
-        document_id: this.documentId
-      });
+      this.send(requestType, data);
 
       setTimeout(() => {
-        this.removeHandler('conversation.main.create.completed', handler);
-        this.removeHandler('conversation.main.create.error', errorHandler);
-        reject(new Error('Timeout creating conversation'));
-      }, 10000);
+        this.removeHandler(responseType, handler);
+        this.removeHandler(`${responseType}.error`, errorHandler);
+        reject(new Error(`Timeout waiting for ${responseType}`));
+      }, timeout);
     });
+  }
+
+  async createMainConversation(): Promise<string> {
+    const response = await this.sendAndWait<ConversationCreateCompleted>(
+      'conversation.main.create',
+      'conversation.main.create.completed',
+      { document_id: this.documentId }
+    );
+    return response.conversation_id;
   }
 
   async createChunkConversation(chunkId: string, highlightText: string): Promise<string> {
-    await this.waitForConnection();
-    
-    return new Promise((resolve, reject) => {
-      const handler: MessageHandler<ConversationCreateCompleted> = (data) => {
-        resolve(data.conversation_id);
-        this.removeHandler<ConversationCreateCompleted>('conversation.chunk.create.completed', handler);
-        this.removeHandler<ConversationCreateError>('conversation.chunk.create.error', errorHandler);
-      };
-
-      const errorHandler: MessageHandler<ConversationCreateError> = (error) => {
-        reject(new Error(error.message || 'Failed to create chunk conversation'));
-        this.removeHandler<ConversationCreateCompleted>('conversation.chunk.create.completed', handler);
-        this.removeHandler<ConversationCreateError>('conversation.chunk.create.error', errorHandler);
-      };
-
-      this.onMessage<ConversationCreateCompleted>('conversation.chunk.create.completed', handler);
-      this.onMessage<ConversationCreateError>('conversation.chunk.create.error', errorHandler);
-
-      this.send('conversation.chunk.create', {
-        document_id: this.documentId,
-        chunk_id: chunkId,
-        highlight_text: highlightText
-      });
-
-      setTimeout(() => {
-        this.removeHandler<ConversationCreateCompleted>('conversation.chunk.create.completed', handler);
-        this.removeHandler<ConversationCreateError>('conversation.chunk.create.error', errorHandler);
-        reject(new Error('Timeout creating chunk conversation'));
-      }, 10000);
-    });
+    const response = await this.sendAndWait<ConversationCreateCompleted>(
+      'conversation.chunk.create',
+      'conversation.chunk.create.completed',
+      { document_id: this.documentId, chunk_id: chunkId, highlight_text: highlightText }
+    );
+    return response.conversation_id;
   }
 
-  async sendMessage(conversationId: string, content: string, chunkId?: string, conversationType?: string): Promise<ConversationMessageSendCompleted> {
-    await this.waitForConnection();
-
-    return new Promise((resolve, reject) => {
-      const handler: MessageHandler<ConversationMessageSendCompleted> = (data) => {
-        resolve(data);
-        this.removeHandler<ConversationMessageSendCompleted>('conversation.message.send.completed', handler);
-        this.removeHandler<WebSocketError>('conversation.message.send.error', errorHandler);
-      };
-
-      const errorHandler: MessageHandler<WebSocketError> = (error) => {
-        reject(new Error(error.message || 'Failed to send message'));
-        this.removeHandler<ConversationMessageSendCompleted>('conversation.message.send.completed', handler);
-        this.removeHandler<WebSocketError>('conversation.message.send.error', errorHandler);
-      };
-
-      this.onMessage<ConversationMessageSendCompleted>('conversation.message.send.completed', handler);
-      this.onMessage<WebSocketError>('conversation.message.send.error', errorHandler);
-
-      this.send('conversation.message.send', {
+  async sendMessage(
+    conversationId: string, 
+    content: string, 
+    chunkId?: string, 
+    conversationType?: string
+  ): Promise<ConversationMessageSendCompleted> {
+    return this.sendAndWait<ConversationMessageSendCompleted>(
+      'conversation.message.send',
+      'conversation.message.send.completed',
+      {
         conversation_id: conversationId,
-        content: content,
+        content,
         chunk_id: chunkId,
         conversation_type: conversationType
-      });
-
-      setTimeout(() => {
-        this.removeHandler<ConversationMessageSendCompleted>('conversation.message.send.completed', handler);
-        this.removeHandler<WebSocketError>('conversation.message.send.error', errorHandler);
-        reject(new Error('Timeout sending message'));
-      }, 30000);
-    });
+      },
+      30000 // Keep the longer timeout for message sending
+    );
   }
 
   async getMessages(conversationId: string): Promise<ConversationResponse> {
-    await this.waitForConnection();
+    const response = await this.sendAndWait<ConversationMessagesCompleted>(
+      'conversation.messages.list',
+      'conversation.messages.completed',
+      { conversation_id: conversationId }
+    );
 
-    return new Promise((resolve, reject) => {
-      const handler: MessageHandler<ConversationMessagesCompleted> = (data) => {
-        const transformedData: ConversationResponse = {
-          conversation_id: data.conversation_id,
-          messages: data.messages.map(msg => ({
-            id: msg.id,
-            role: msg.role,
-            content: msg.message,
-            timestamp: msg.created_at
-          }))
-        };
-        resolve(transformedData);
-      };
-
-      const errorHandler: MessageHandler<WebSocketError> = (error) => {
-        reject(new Error(error.message || 'Failed to get messages'));
-      };
-
-      this.onMessage('conversation.messages.completed', handler);
-      this.onMessage('conversation.messages.error', errorHandler);
-
-      this.send('conversation.messages.list', {
-        conversation_id: conversationId
-      });
-    });
+    return {
+      conversation_id: response.conversation_id,
+      messages: response.messages.map(msg => ({
+        id: msg.id,
+        role: msg.role,
+        content: msg.message,
+        timestamp: msg.created_at
+      }))
+    };
   }
 
   async getChunkConversations(chunkId: string): Promise<ChunkConversationsResponse> {
-    await this.waitForConnection();
-
-    return new Promise((resolve, reject) => {
-      const handler: MessageHandler<ConversationChunkGetCompleted> = (data) => {
-        resolve(data);
-        this.removeHandler<ConversationChunkGetCompleted>('conversation.chunk.get.completed', handler);
-        this.removeHandler<WebSocketError>('conversation.chunk.get.error', errorHandler);
-      };
-
-      const errorHandler: MessageHandler<WebSocketError> = (error) => {
-        reject(new Error(error.message || 'Failed to get conversations'));
-        this.removeHandler<ConversationChunkGetCompleted>('conversation.chunk.get.completed', handler);
-        this.removeHandler<WebSocketError>('conversation.chunk.get.error', errorHandler);
-      };
-
-      this.onMessage<ConversationChunkGetCompleted>('conversation.chunk.get.completed', handler);
-      this.onMessage<WebSocketError>('conversation.chunk.get.error', errorHandler);
-
-      this.send('conversation.get.by.sequence', {
-        sequence_number: chunkId
-      });
-
-      setTimeout(() => {
-        this.removeHandler<ConversationChunkGetCompleted>('conversation.chunk.get.completed', handler);
-        this.removeHandler<WebSocketError>('conversation.chunk.get.error', errorHandler);
-        reject(new Error('Timeout getting conversations'));
-      }, 5000);
-    });
+    return this.sendAndWait<ChunkConversationsResponse>(
+      'conversation.get.by.sequence',
+      'conversation.chunk.get.completed',
+      { sequence_number: chunkId },
+      5000
+    );
   }
 
   close(): void {

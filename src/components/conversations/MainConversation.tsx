@@ -1,34 +1,45 @@
-import { ConversationWebSocket } from '@/lib/websocket/ConversationWebSocket';
+// MainConversation.tsx
 import BaseConversation from './BaseConversation';
+import { useSocket } from '@/contexts/SocketContext';
 
 interface MainConversationProps {
   documentId: string;
   conversationId: string;
   currentChunkId: string;
-  websocket: ConversationWebSocket;
 }
 
 export default function MainConversation({ 
   documentId,
   conversationId,
   currentChunkId,
-  websocket 
 }: MainConversationProps) {
+  const { conversationSocket } = useSocket();
+
   const handleInitialize = async () => {
     return conversationId;
   };
 
-  const handleSendMessage = async (ws: ConversationWebSocket, content: string) => {
-    return ws.sendMessage(conversationId, content, currentChunkId, "main");
+  const handleSendMessage = async (content: string) => {
+    if (!conversationSocket) {
+      throw new Error('WebSocket not connected');
+    }
+
+    const response = await conversationSocket.sendMessage(
+      conversationId, 
+      content, 
+      currentChunkId, 
+      "main"
+    );
+  
+    return { message: response.message };
   };
 
   return (
     <BaseConversation
       documentId={documentId}
-      websocket={websocket}
       onInitialize={handleInitialize}
       onSendMessage={handleSendMessage}
       placeholder="Ask about the entire document..."
     />
   );
-} 
+}
