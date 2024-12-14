@@ -1,16 +1,24 @@
-const API_BASE_URL = 'http://localhost:8000/api';
-const WS_BASE_URL = 'ws://localhost:8000/api';
+import { API_BASE_URL } from './constants';
+import { Document, DocumentResponse } from '@/types';
+
+const WS_BASE_URL = 'wss://explainai-new-528ec8eb814a.herokuapp.com';
 
 interface MessageHandler {
   (data: unknown): void;
 }
 
-export async function uploadDocument(file: File): Promise<{ document_id: string }> {
+export async function uploadDocument(file: File, token: string | null | undefined): Promise<{ document_id: string }> {
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await fetch(`${API_BASE_URL}/upload`, {
+  const headers: HeadersInit = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/documents/upload`, {
     method: 'POST',
+    headers,
     body: formData,
   });
 
@@ -19,6 +27,32 @@ export async function uploadDocument(file: File): Promise<{ document_id: string 
   }
 
   return response.json();
+}
+
+export async function listDocuments(token: string | null | undefined): Promise<Document[]> {
+  const headers: HeadersInit = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/auth/me/documents`, {
+    method: 'GET',
+    headers,
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to list documents');
+  }
+
+  const data = await response.json();
+  // Transform the API response to match our Document interface
+  return (data as DocumentResponse[]).map((doc) => ({
+    id: doc.id,
+    title: doc.title || doc.name || 'Untitled Document',
+    created_at: doc.created_at || new Date().toISOString(),
+    content: doc.content,
+    preview: doc.preview
+  }));
 }
 
 // Base WebSocket class with all the common functionality
