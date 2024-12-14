@@ -3,27 +3,151 @@
 <head>
     <title>ExplainAI Login</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--earth-50);
+            color: var(--earth-900);
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(80, 73, 57, 0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .logo {
+            margin-bottom: 24px;
+        }
+
+        .logo svg {
+            width: 48px;
+            height: 48px;
+            color: var(--earth-600);
+        }
+
+        h1 {
+            color: var(--earth-900);
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        p {
+            color: var(--earth-700);
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 32px;
+        }
+
+        .g_id_signin {
+            display: flex !important;
+            justify-content: center;
+            margin-top: 16px;
+        }
+
+        .divider {
+            margin: 24px 0;
+            display: flex;
+            align-items: center;
+            text-align: center;
+            color: var(--earth-600);
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--earth-200);
+        }
+
+        .divider span {
+            padding: 0 16px;
+            font-size: 14px;
+        }
+
+        :root {
+            --earth-50: #f6f5f1;
+            --earth-100: #e3e0d7;
+            --earth-200: #cdc7b9;
+            --earth-300: #b3aa96;
+            --earth-400: #9c9077;
+            --earth-500: #867a61;
+            --earth-600: #6b614c;
+            --earth-700: #504939;
+            --earth-800: #363127;
+            --earth-900: #1c1914;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: var(--earth-900);
+                color: var(--earth-50);
+            }
+
+            .login-container {
+                background: var(--earth-800);
+            }
+
+            h1 {
+                color: var(--earth-50);
+            }
+
+            p {
+                color: var(--earth-300);
+            }
+
+            .logo svg {
+                color: var(--earth-400);
+            }
+        }
+    </style>
 </head>
 <body>
-    <div id="g_id_onload"
-         data-client_id="395094655648-tpf5gvtmk7h3c086gp6ubf2qgupf8uib.apps.googleusercontent.com"
-         data-callback="handleCredentialResponse">
-    </div>
-    <div class="g_id_signin"
-         data-type="standard"
-         data-size="large"
-         data-theme="outline"
-         data-text="sign_in_with"
-         data-shape="rectangular"
-         data-logo_alignment="left">
+    <div class="login-container">
+        <div class="logo">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+        </div>
+        <h1>Welcome to ExplainAI</h1>
+        <p>Sign in to unlock the power of AI-driven document analysis and get instant insights from your texts.</p>
+        
+        <div id="g_id_onload"
+             data-client_id="395094655648-tpf5gvtmk7h3c086gp6ubf2qgupf8uib.apps.googleusercontent.com"
+             data-callback="handleCredentialResponse">
+        </div>
+        <div class="g_id_signin"
+             data-type="standard"
+             data-size="large"
+             data-theme="outline"
+             data-text="sign_in_with"
+             data-shape="rectangular"
+             data-logo_alignment="left">
+        </div>
     </div>
 
     <script>
         function handleCredentialResponse(response) {
             if (response.credential) {
-                // Store the token in localStorage
                 localStorage.setItem('google_token', response.credential);
-                // Redirect back to the main app
                 window.location.href = '/';
             }
         }
