@@ -23,4 +23,5 @@ export interface Document {
   content?: string;
   preview?: string;
   name?: string;
+  isExample?: boolean;
 }

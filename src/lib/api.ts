@@ -29,13 +29,14 @@ export async function uploadDocument(file: File, token: string | null | undefine
   return response.json();
 }
 
-export async function listDocuments(token: string | null | undefined): Promise<Document[]> {
+export async function listDocuments(token: string | null | undefined, isDemo: boolean = false): Promise<Document[]> {
   const headers: HeadersInit = {};
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/auth/me/documents`, {
+  const endpoint = isDemo ? '/api/documents/examples' : '/api/auth/me/documents';
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method: 'GET',
     headers,
   });
@@ -45,13 +46,14 @@ export async function listDocuments(token: string | null | undefined): Promise<D
   }
 
   const data = await response.json();
-  // Transform the API response to match our Document interface
   return (data as DocumentResponse[]).map((doc) => ({
     id: doc.id,
     title: doc.title || doc.name || 'Untitled Document',
     created_at: doc.created_at || new Date().toISOString(),
+    isExample: isDemo,
     content: doc.content,
-    preview: doc.preview
+    preview: doc.preview,
+    name: doc.name
   }));
 }
 
@@ -281,4 +283,12 @@ export class DocumentWebSocket extends BaseWebSocket {
     this.pendingMetadataRequest = false;
     super.handleReconnect();
   }
+}
+
+export function createWebSocket(documentId: string, token: string | null | undefined): WebSocket {
+  const wsUrl = new URL(`${WS_BASE_URL}/api/conversations/stream/${documentId}`);
+  if (token) {
+    wsUrl.searchParams.append('token', token);
+  }
+  return new WebSocket(wsUrl.toString());
 }
