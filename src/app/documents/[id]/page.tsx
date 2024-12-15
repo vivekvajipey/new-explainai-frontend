@@ -13,7 +13,7 @@ export default function DocumentPage({
 }: { 
   params: Promise<{ id: string }> 
 }) {
-  const { id } = use(params); // This resolves the Promise
+  const { id } = use(params);
 
   return (
     <SocketProvider documentId={id}>

@@ -3,6 +3,7 @@ import { ConversationData } from '@/lib/websocket/types';
 import MainConversation from './MainConversation';
 import ChunkConversation from './ChunkConversation';
 import { useSocket } from '@/contexts/SocketContext';
+import { useConversationStore } from '@/stores/conversationStores';
 
 export interface ConversationTabsRef {
   createChunkConversation: (highlightText: string, chunkId: string) => void;
@@ -28,6 +29,13 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
         try {
           const conversationId = await conversationSocket.createMainConversation();
           setMainConversationId(conversationId);
+          console.log('STEP 1: [ConversationTabs] Main conversation created:', conversationId);
+
+          useConversationStore.getState().addConversation({
+            id: conversationId,
+            type: 'main'
+          });
+          console.log('STEP 2: [ConversationTabs] Main conversation added to store:', conversationId);
         } catch (error) {
           console.error('Failed to create main conversation:', error);
           setError('Failed to create conversation');

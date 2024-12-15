@@ -37,6 +37,7 @@ export default function MainConversation({
   return (
     <BaseConversation
       documentId={documentId}
+      conversationId={conversationId}
       onInitialize={handleInitialize}
       onSendMessage={handleSendMessage}
       placeholder="Ask about the entire document..."

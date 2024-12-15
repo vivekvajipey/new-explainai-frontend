@@ -1,6 +1,8 @@
+export type MessageRole = 'system' | 'user' | 'assistant';
+
 export interface Message {
   id: string;
-  role: 'user' | 'assistant' | 'system';
+  role: MessageRole;
   content: string;
   timestamp: string;
 }
@@ -50,6 +52,7 @@ export interface WebSocketError {
 
 export interface ConversationMessageSendCompleted {
   message: string;
+  conversation_id: string;
 }
 
 export interface ConversationMessagesCompleted {

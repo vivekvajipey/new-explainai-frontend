@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Send } from 'lucide-react';
 import { useSocket } from '@/contexts/SocketContext';
+import { useConversationStore } from '@/stores/conversationStores';
 
 export interface Message {
   id: string;
@@ -25,15 +26,22 @@ export default function BaseConversation({
   className = ''
 }: BaseConversationProps) {
   const { conversationSocket } = useSocket();
-  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const messages = useConversationStore(state => 
+    conversationId ? state.getMessages(conversationId) : []
+  );
+  const addMessage = useConversationStore(state => state.addMessage);
+  const setMessages = useConversationStore(state => state.setMessages);
+  const removeMessage = useConversationStore(state => state.removeMessage);
+
   useEffect(() => {
     if (!conversationSocket) return;
+    
     const initializeConversation = async () => {
       try {
         setIsLoading(true);
@@ -41,6 +49,7 @@ export default function BaseConversation({
 
         // Initialize using provided method
         const newConversationId = await onInitialize();
+        console.log('STEP 3: [BaseConversation] Initializing conversation with id:', newConversationId);
 
         if (!newConversationId) {
           throw new Error('Failed to initialize conversation: No conversation ID received');
@@ -49,30 +58,30 @@ export default function BaseConversation({
         setConversationId(newConversationId);
 
         // Try to fetch existing messages
-        if (newConversationId) {
-          try {
-            const messagesResponse = await conversationSocket.getMessages(newConversationId);
-            
-            if (messagesResponse?.messages?.length > 0) {
-              // Filter out system messages and convert to Message format
-              const filteredMessages = messagesResponse.messages
-                .filter(msg => msg.role !== 'system')
-                .map(msg => ({
-                  id: msg.id,
-                  role: msg.role as 'user' | 'assistant',
-                  content: msg.content,
-                  timestamp: msg.timestamp
-                }));
-              setMessages(filteredMessages);
-            }
-          } catch (err) {
-            console.log('No existing messages for new conversation: ', err);
+        try {
+          const messagesResponse = await conversationSocket.getMessages(newConversationId);
+          console.log('STEP 4: [BaseConversation] Trying to fetch existing messages, response:', messagesResponse);
+          
+          if (messagesResponse?.messages?.length > 0) {
+            // Filter out system messages and convert to Message format
+            const filteredMessages = messagesResponse.messages
+              .filter(msg => msg.role !== 'system')
+              .map(msg => ({
+                id: msg.id,
+                role: msg.role as 'user' | 'assistant',
+                content: msg.content,
+                timestamp: msg.timestamp
+              }));
+            console.log('STEP 5: [BaseConversation] Fetched existing messages:', filteredMessages);
+            setMessages(newConversationId, filteredMessages);
           }
+        } catch (err) {
+          console.log('[BaseConversation] No existing messages for new conversation: ', err);
         }
 
         setIsLoading(false);
       } catch (error) {
-        console.error('Failed to initialize conversation:', error);
+        console.error('[BaseConversation] Failed to initialize conversation:', error);
         setError('Failed to initialize conversation');
         setIsLoading(false);
       }
@@ -102,7 +111,7 @@ export default function BaseConversation({
     try {
       setIsLoading(true);
       setError(null);
-      setMessages(prev => [...prev, userMessage]);
+      addMessage(conversationId, userMessage);
       setInput('');
 
       if (!conversationSocket) return;
@@ -110,18 +119,18 @@ export default function BaseConversation({
       const response = await onSendMessage(content);
 
       if (response && response.message) {
-        setMessages(prev => [...prev, {
+        addMessage(conversationId, {
           id: Date.now().toString(),
           role: 'assistant',
           content: response.message,
           timestamp: new Date().toISOString(),
-        }]);
+        });
       }
       
     } catch (err) {
       console.error('Failed to send message:', err);
       setError(err instanceof Error ? err.message : 'Failed to send message');
-      setMessages(prev => prev.filter(msg => msg.id !== userMessage.id));
+      removeMessage(conversationId, userMessage.id);
     } finally {
       setIsLoading(false);
     }
@@ -195,4 +204,4 @@ export default function BaseConversation({
       </div>
     </div>
   );
-} 
+}

@@ -9,6 +9,7 @@ import {
   ConversationMessageSendCompleted,
   ConversationMessagesCompleted,
 } from './types';
+import { useConversationStore } from '@/stores/conversationStores';
 
 const WS_BASE_URL = 'ws://localhost:8000/api';
 
@@ -22,9 +23,41 @@ export class ConversationWebSocket {
   private readonly maxReconnectAttempts = 2;
   private readonly reconnectDelay = 1000;
 
+  private setupMessageHandlers() {
+    // Handler for message send completion
+    this.onMessage<ConversationMessageSendCompleted>(
+      'conversation.message.send.completed', 
+      (data) => {
+        useConversationStore.getState().addMessage(data.conversation_id, {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: data.message,
+          timestamp: new Date().toISOString()
+        });
+      }
+    );
+
+    // Handler for messages list completion
+    this.onMessage<ConversationMessagesCompleted>(
+      'conversation.messages.completed',
+      (data) => {
+        useConversationStore.getState().setMessages(
+          data.conversation_id,
+          data.messages.map(msg => ({
+            id: msg.id,
+            role: msg.role,
+            content: msg.message,
+            timestamp: msg.created_at
+          }))
+        );
+      }
+    );
+  }
+
   constructor(private readonly documentId: string) {
     console.log('ConversationWebSocket: Initializing for document', documentId);
     this.connectionPromise = this.connect();
+    this.setupMessageHandlers();
   }
 
   private connect(): Promise<void> {
@@ -216,7 +249,7 @@ export class ConversationWebSocket {
         chunk_id: chunkId,
         conversation_type: conversationType
       },
-      30000 // Keep the longer timeout for message sending
+      30000 
     );
   }
 
