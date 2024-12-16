@@ -1,4 +1,4 @@
-import { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
+import { useEffect, useState, forwardRef, useImperativeHandle, useRef } from 'react';
 import { ConversationData } from '@/lib/websocket/types';
 import MainConversation from './MainConversation';
 import ChunkConversation from './ChunkConversation';
@@ -21,59 +21,47 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
     const [chunkConversations, setChunkConversations] = useState<ConversationData[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [mainConversationId, setMainConversationId] = useState<string | null>(null);
+    
+    const hasInitializedMain = useRef(false);
 
     useEffect(() => {
-      if (!conversationSocket) return;
-      
+      if (!conversationSocket) {
+        console.log("[DEBUG] No conversationSocket yet, skipping initMainConversation");
+        return;
+      }
+    
+      console.log("[DEBUG] useEffect in ConversationTabs triggered for main conversation init");
+
+      // If we've already done init, skip
+      if (hasInitializedMain.current) {
+        return;
+      }
+    
       const initMainConversation = async () => {
+        console.log("[DEBUG] initMainConversation called");
         try {
           const conversationId = await conversationSocket.createMainConversation();
-          console.log('STEP 1: [ConversationTabs] Main conversation created:', conversationId);
-
-          setMainConversationId(conversationId);
-          console.log('STEP 2: [ConversationTabs] Main conversation id set:', conversationId);
-
-          // Add the main conversation to the store
+          console.log("[DEBUG] initMainConversation success, conversationId =", conversationId);
+    
+          setMainConversationId(conversationId);  // <--- React setState
+          console.log("[DEBUG] setMainConversationId called with", conversationId);
+    
           useConversationStore.getState().addConversation({
             id: conversationId,
             type: 'main'
           });
+          console.log("[DEBUG] useConversationStore.addConversation called with", conversationId);
+    
         } catch (error) {
-          console.error('Failed to create main conversation:', error);
+          console.error('[DEBUG] Failed to create main conversation:', error);
           setError('Failed to create conversation');
         }
       };
-
-      if (!mainConversationId) {
-        initMainConversation();
-      }
-    }, [conversationSocket, mainConversationId]);
-
-    // Load chunk conversations when sequence changes
-    useEffect(() => {
-      if (!conversationSocket) return;
-
-      const loadChunkConversations = async () => {
-        try {
-          const response = await conversationSocket.getChunkConversations(currentSequence);
-          const conversations = Object.entries(response.conversations).map(([id, data]) => ({
-            id,
-            type: 'chunk' as const,
-            chunkId: data.chunk_id,
-            highlightText: data.highlight_text,
-            messages: []
-          }));
-          setChunkConversations(conversations);
-        } catch (error) {
-          console.error('Failed to load chunk conversations:', error);
-        }
-      };
-
-      if (conversationSocket) {
-        loadChunkConversations();
-      }
-
-    }, [currentSequence]);
+    
+      console.log("[DEBUG] Calling initMainConversation() exactly once");
+      initMainConversation();
+      hasInitializedMain.current = true;
+    }, [conversationSocket]);
 
     // Expose methods through ref
     useImperativeHandle(ref, () => ({

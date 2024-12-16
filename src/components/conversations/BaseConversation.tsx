@@ -31,39 +31,22 @@ export default function BaseConversation({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const messages = useConversationStore(state => 
-    conversationId ? state.getMessages(conversationId) : []
-  );
+  console.log("[DEBUG] BaseConversation rendering with conversationId =", conversationId);
+  const messages = useConversationStore((state) => {
+    console.log("[DEBUG] useConversationStore selector running for conversationId =", conversationId);
+    return conversationId ? state.getMessages(conversationId) : [];
+  });
+  console.log("[DEBUG] BaseConversation got messages.length =", messages.length);
   const addMessage = useConversationStore(state => state.addMessage);
-  const setMessages = useConversationStore(state => state.setMessages);
-  const removeMessage = useConversationStore(state => state.removeMessage);
+  // const setMessages = useConversationStore(state => state.setMessages);
+  // const removeMessage = useConversationStore(state => state.removeMessage);
 
-  // Just load messages when we have a conversationId
   useEffect(() => {
-    if (!conversationSocket) return;
-    
-    const loadMessages = async () => {
-      try {
-        console.log("LOADING: Getting messages for conversation:", conversationId, " with documentId:", documentId);
-        const messagesResponse = await conversationSocket.getMessages(conversationId);
-        
-        if (messagesResponse?.messages?.length > 0) {
-          const filteredMessages = messagesResponse.messages
-            .filter(msg => msg.role !== 'system')
-            .map(msg => ({
-              id: msg.id,
-              role: msg.role as 'user' | 'assistant',
-              content: msg.content,
-              timestamp: msg.timestamp
-            }));
-          setMessages(conversationId, filteredMessages);
-        }
-      } catch (err) {
-        console.log("Failed to load messages:", err);
-      }
-    };
-
-    loadMessages();
+    console.log("[DEBUG] BaseConversation.useEffect triggered", {
+      conversationId,
+      documentId,
+      conversationSocket: !!conversationSocket,
+    });
   }, [conversationSocket, conversationId]);
 
   useEffect(() => {
@@ -75,24 +58,34 @@ export default function BaseConversation({
       setError('No active conversation');
       return;
     }
-
+  
+    // Don’t add to store yet. 
+    // Create a local userMessage object but keep it local for now.
     const userMessage = {
       id: Date.now().toString(),
       role: 'user' as const,
       content,
       timestamp: new Date().toISOString(),
     };
-
+  
     try {
       setIsLoading(true);
       setError(null);
-      addMessage(conversationId, userMessage);
       setInput('');
-
-      if (!conversationSocket) return;
-
+  
+      // **Wait** until WebSocket is confirmed open:
+      if (!conversationSocket?.isConnected) {
+        // Show error or optionally queue the message
+        throw new Error('WebSocket is not connected');
+      }
+  
+      // Actually send the message over the socket:
       const response = await onSendMessage(content, conversationId);
-
+  
+      // If successful, THEN add the user’s message to the store:
+      addMessage(conversationId, userMessage);
+  
+      // Then also add the assistant message if provided:
       if (response && response.message) {
         addMessage(conversationId, {
           id: Date.now().toString(),
@@ -101,15 +94,17 @@ export default function BaseConversation({
           timestamp: new Date().toISOString(),
         });
       }
-      
+  
     } catch (err) {
       console.error('Failed to send message:', err);
       setError(err instanceof Error ? err.message : 'Failed to send message');
-      removeMessage(conversationId, userMessage.id);
+      // **Do not** remove any message from the store here, 
+      // because we never actually added it if it failed.
     } finally {
       setIsLoading(false);
     }
   };
+  
 
   return (
     <div className={`flex flex-col h-[500px] bg-white dark:bg-earth-800 rounded-lg shadow-sm ${className}`}>

@@ -17,7 +17,7 @@ export class ConversationWebSocket {
   private ws: WebSocket | null = null;
   private eventHandlers = new Map<string, Set<MessageHandler<unknown>>>();
   private pendingMessages: { type: string; data: unknown }[] = [];
-  private isConnected = false;
+  public isConnected = false;
   private connectionPromise: Promise<void> | null = null;
   private reconnectAttempts = 0;
   private readonly maxReconnectAttempts = 2;
@@ -29,7 +29,7 @@ export class ConversationWebSocket {
       'conversation.message.send.completed', 
       (data) => {
         useConversationStore.getState().addMessage(data.conversation_id, {
-          id: Date.now().toString(),
+          id: data.user_message_id,
           role: 'assistant',
           content: data.message,
           timestamp: new Date().toISOString()
@@ -188,31 +188,39 @@ export class ConversationWebSocket {
     data: unknown,
     timeout: number = 10000
   ): Promise<T> {
+    console.log("[DEBUG] sendAndWait START:", { requestType, responseType, data });
     await this.waitForConnection();
-
+  
     return new Promise((resolve, reject) => {
-      const handler = (data: T) => {
-        resolve(data);
-        this.removeHandler(responseType, handler);
-        this.removeHandler(`${responseType}.error`, errorHandler);
-      };
-
-      const errorHandler = (error: WebSocketError) => {
-        reject(new Error(error.message || `Failed during ${requestType}`));
-        this.removeHandler(responseType, handler);
-        this.removeHandler(`${responseType}.error`, errorHandler);
-      };
-
-      this.onMessage(responseType, handler);
-      this.onMessage(`${responseType}.error`, errorHandler);
-
-      this.send(requestType, data);
-
-      setTimeout(() => {
+      // Store timer reference so we can clear it if we get a successful response or error
+      const timer = setTimeout(() => {
+        console.error(`[DEBUG] sendAndWait TIMEOUT for ${responseType}`);
         this.removeHandler(responseType, handler);
         this.removeHandler(`${responseType}.error`, errorHandler);
         reject(new Error(`Timeout waiting for ${responseType}`));
       }, timeout);
+  
+      const handler = (data: T) => {
+        console.log(`[DEBUG] sendAndWait SUCCESS for ${responseType}:`, data);
+        clearTimeout(timer); // Clear timeout on success
+        resolve(data);
+        this.removeHandler(responseType, handler);
+        this.removeHandler(`${responseType}.error`, errorHandler);
+      };
+  
+      const errorHandler = (error: WebSocketError) => {
+        console.error(`[DEBUG] sendAndWait ERROR for ${responseType}:`, error);
+        clearTimeout(timer); // Clear timeout on error
+        reject(new Error(error.message || `Failed during ${requestType}`));
+        this.removeHandler(responseType, handler);
+        this.removeHandler(`${responseType}.error`, errorHandler);
+      };
+  
+      this.onMessage(responseType, handler);
+      this.onMessage(`${responseType}.error`, errorHandler);
+  
+      console.log("[DEBUG] sendAndWait sending:", { requestType, data });
+      this.send(requestType, data);
     });
   }
 
