@@ -28,14 +28,16 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
       const initMainConversation = async () => {
         try {
           const conversationId = await conversationSocket.createMainConversation();
-          setMainConversationId(conversationId);
           console.log('STEP 1: [ConversationTabs] Main conversation created:', conversationId);
 
+          setMainConversationId(conversationId);
+          console.log('STEP 2: [ConversationTabs] Main conversation id set:', conversationId);
+
+          // Add the main conversation to the store
           useConversationStore.getState().addConversation({
             id: conversationId,
             type: 'main'
           });
-          console.log('STEP 2: [ConversationTabs] Main conversation added to store:', conversationId);
         } catch (error) {
           console.error('Failed to create main conversation:', error);
           setError('Failed to create conversation');
@@ -144,13 +146,14 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
           activeTab === 'main' ? (
             <MainConversation
               documentId={documentId}
-              conversationId={mainConversationId}
               currentChunkId={currentSequence}
+              conversationId={mainConversationId}
             />
           ) : (
             <ChunkConversation
               documentId={documentId}
               chunkId={currentSequence}
+              conversationId={activeTab}
               highlightText={chunkConversations.find(conv => conv.id === activeTab)?.highlightText || ''}
             />
           )

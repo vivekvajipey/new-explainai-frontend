@@ -217,6 +217,7 @@ export class ConversationWebSocket {
   }
 
   async createMainConversation(): Promise<string> {
+    console.log("[ConversationWebSocket] CALLING createMainConversation!!!");
     const response = await this.sendAndWait<ConversationCreateCompleted>(
       'conversation.main.create',
       'conversation.main.create.completed',

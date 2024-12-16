@@ -12,15 +12,15 @@ export interface Message {
 
 export interface BaseConversationProps {
   documentId: string;
-  onInitialize: () => Promise<string>;
-  onSendMessage: (content: string) => Promise<{ message: string }>;
+  conversationId: string;
+  onSendMessage: (content: string, conversationId: string) => Promise<{ message: string }>;
   placeholder?: string;
   className?: string;
 }
 
 export default function BaseConversation({ 
   documentId,
-  onInitialize,
+  conversationId,
   onSendMessage,
   placeholder = 'Type a message...',
   className = ''
@@ -28,7 +28,6 @@ export default function BaseConversation({
   const { conversationSocket } = useSocket();
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,57 +38,33 @@ export default function BaseConversation({
   const setMessages = useConversationStore(state => state.setMessages);
   const removeMessage = useConversationStore(state => state.removeMessage);
 
+  // Just load messages when we have a conversationId
   useEffect(() => {
     if (!conversationSocket) return;
     
-    const initializeConversation = async () => {
+    const loadMessages = async () => {
       try {
-        setIsLoading(true);
-        setError(null);
-
-        // Initialize using provided method
-        const newConversationId = await onInitialize();
-        console.log('STEP 3: [BaseConversation] Initializing conversation with id:', newConversationId);
-
-        if (!newConversationId) {
-          throw new Error('Failed to initialize conversation: No conversation ID received');
+        console.log("LOADING: Getting messages for conversation:", conversationId, " with documentId:", documentId);
+        const messagesResponse = await conversationSocket.getMessages(conversationId);
+        
+        if (messagesResponse?.messages?.length > 0) {
+          const filteredMessages = messagesResponse.messages
+            .filter(msg => msg.role !== 'system')
+            .map(msg => ({
+              id: msg.id,
+              role: msg.role as 'user' | 'assistant',
+              content: msg.content,
+              timestamp: msg.timestamp
+            }));
+          setMessages(conversationId, filteredMessages);
         }
-
-        setConversationId(newConversationId);
-
-        // Try to fetch existing messages
-        try {
-          const messagesResponse = await conversationSocket.getMessages(newConversationId);
-          console.log('STEP 4: [BaseConversation] Trying to fetch existing messages, response:', messagesResponse);
-          
-          if (messagesResponse?.messages?.length > 0) {
-            // Filter out system messages and convert to Message format
-            const filteredMessages = messagesResponse.messages
-              .filter(msg => msg.role !== 'system')
-              .map(msg => ({
-                id: msg.id,
-                role: msg.role as 'user' | 'assistant',
-                content: msg.content,
-                timestamp: msg.timestamp
-              }));
-            console.log('STEP 5: [BaseConversation] Fetched existing messages:', filteredMessages);
-            setMessages(newConversationId, filteredMessages);
-          }
-        } catch (err) {
-          console.log('[BaseConversation] No existing messages for new conversation: ', err);
-        }
-
-        setIsLoading(false);
-      } catch (error) {
-        console.error('[BaseConversation] Failed to initialize conversation:', error);
-        setError('Failed to initialize conversation');
-        setIsLoading(false);
+      } catch (err) {
+        console.log("Failed to load messages:", err);
       }
     };
 
-    initializeConversation();
-
-  }, [documentId, conversationSocket]);
+    loadMessages();
+  }, [conversationSocket, conversationId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -116,7 +91,7 @@ export default function BaseConversation({
 
       if (!conversationSocket) return;
 
-      const response = await onSendMessage(content);
+      const response = await onSendMessage(content, conversationId);
 
       if (response && response.message) {
         addMessage(conversationId, {

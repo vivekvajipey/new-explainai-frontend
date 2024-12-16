@@ -90,7 +90,7 @@ export const useConversationStore = create<ConversationStoreState>((set, get) =>
       ...conversation,
       messages: new Map()
     });
-    console.log('STEP 2: [useConversationStore] Conversation added to store:', conversation.id);
+    console.log('STEP 3: [useConversationStore] Conversation added to store:', conversation.id);
     return { conversations: newConversations };
   }),
 

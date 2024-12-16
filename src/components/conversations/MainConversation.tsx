@@ -4,22 +4,18 @@ import { useSocket } from '@/contexts/SocketContext';
 
 interface MainConversationProps {
   documentId: string;
-  conversationId: string;
   currentChunkId: string;
+  conversationId: string;
 }
 
 export default function MainConversation({ 
   documentId,
-  conversationId,
   currentChunkId,
+  conversationId,
 }: MainConversationProps) {
   const { conversationSocket } = useSocket();
 
-  const handleInitialize = async () => {
-    return conversationId;
-  };
-
-  const handleSendMessage = async (content: string) => {
+  const handleSendMessage = async (content: string, conversationId: string) => {
     if (!conversationSocket) {
       throw new Error('WebSocket not connected');
     }
@@ -38,7 +34,6 @@ export default function MainConversation({
     <BaseConversation
       documentId={documentId}
       conversationId={conversationId}
-      onInitialize={handleInitialize}
       onSendMessage={handleSendMessage}
       placeholder="Ask about the entire document..."
     />

@@ -1,42 +1,43 @@
 // ChunkConversation.tsx
 import BaseConversation from './BaseConversation';
-import { useState } from 'react';
 import { useSocket } from '@/contexts/SocketContext';
 
 interface ChunkConversationProps {
   documentId: string;
   chunkId: string;
+  conversationId: string;
   highlightText: string;
 }
 
 export default function ChunkConversation({ 
   documentId, 
   chunkId,
+  conversationId,
   highlightText,
 }: ChunkConversationProps) {
   const { conversationSocket } = useSocket();
-  const [conversationId, setConversationId] = useState<string | null>(null);
   
-  const handleInitialize = async () => {
-    if (!conversationSocket) {
-      throw new Error('WebSocket not connected');
-    }
+  // const handleInitialize = async () => {
+  //   if (!conversationSocket) {
+  //     throw new Error('WebSocket not connected');
+  //   }
 
-    const newConversationId = await conversationSocket.createChunkConversation(
-      chunkId, 
-      highlightText
-    );
-    setConversationId(newConversationId);
-    return newConversationId;
-  };
+  //   const newConversationId = await conversationSocket.createChunkConversation(
+  //     chunkId, 
+  //     highlightText
+  //   );
+  //   return newConversationId;
+  // };
 
-  const handleSendMessage = async (content: string) => {
+  const handleSendMessage = async (content: string, conversationId: string) => {
     if (!conversationSocket || !conversationId) {
       throw new Error('No active conversation');
     }
+
+    console.log("Sending message to chunk conversation:", conversationId, "with highlightText:", highlightText);
   
     const response = await conversationSocket.sendMessage(
-      conversationId, 
+      conversationId,
       content, 
       chunkId, 
       "highlight"
@@ -48,7 +49,7 @@ export default function ChunkConversation({
   return (
     <BaseConversation
       documentId={documentId}
-      onInitialize={handleInitialize}
+      conversationId={conversationId}
       onSendMessage={handleSendMessage}
       placeholder="Ask about this highlighted text..."
       className="border-2 border-yellow-200"
