@@ -24,19 +24,6 @@ export class ConversationWebSocket {
   private readonly reconnectDelay = 1000;
 
   private setupMessageHandlers() {
-    // Handler for message send completion
-    this.onMessage<ConversationMessageSendCompleted>(
-      'conversation.message.send.completed', 
-      (data) => {
-        useConversationStore.getState().addMessage(data.conversation_id, {
-          id: data.user_message_id,
-          role: 'assistant',
-          content: data.message,
-          timestamp: new Date().toISOString()
-        });
-      }
-    );
-
     // Handler for messages list completion
     this.onMessage<ConversationMessagesCompleted>(
       'conversation.messages.completed',
