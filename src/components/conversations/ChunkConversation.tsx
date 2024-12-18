@@ -16,19 +16,7 @@ export default function ChunkConversation({
   highlightText,
 }: ChunkConversationProps) {
   const { conversationSocket } = useSocket();
-  
-  // const handleInitialize = async () => {
-  //   if (!conversationSocket) {
-  //     throw new Error('WebSocket not connected');
-  //   }
-
-  //   const newConversationId = await conversationSocket.createChunkConversation(
-  //     chunkId, 
-  //     highlightText
-  //   );
-  //   return newConversationId;
-  // };
-
+   
   const handleSendMessage = async (content: string, conversationId: string) => {
     if (!conversationSocket || !conversationId) {
       throw new Error('No active conversation');

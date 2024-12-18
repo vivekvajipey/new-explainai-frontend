@@ -1,3 +1,4 @@
+// src/components/conversations/ConversationTabs.tsx
 import { useEffect, useState, forwardRef, useImperativeHandle, useRef } from 'react';
 import { ConversationData } from '@/lib/websocket/types';
 import MainConversation from './MainConversation';
@@ -77,6 +78,13 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
             highlightText
           );
 
+          useConversationStore.getState().addConversation({
+            id: conversationId,
+            type: 'chunk',
+            chunkId,
+            highlightText
+          });
+
           setChunkConversations(prev => [...prev, {
             id: conversationId,
             type: 'chunk',
@@ -101,8 +109,8 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
             onClick={() => setActiveTab('main')}
             className={`px-4 py-2 rounded-lg ${
               activeTab === 'main'
-                ? 'bg-earth-600 text-white'
-                : 'bg-earth-100 text-earth-600 hover:bg-earth-200'
+                ? 'bg-earth-100 text-earth-600'
+                : 'bg-earth-600 text-white hover:bg-earth-200'
             }`}
           >
             Main
@@ -113,8 +121,8 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
               onClick={() => setActiveTab(conv.id)}
               className={`px-4 py-2 rounded-lg ${
                 activeTab === conv.id
-                  ? 'bg-earth-600 text-white'
-                  : 'bg-earth-100 text-earth-600 hover:bg-earth-200'
+                  ? 'bg-earth-100 text-earth-600'
+                  : 'bg-earth-600 text-white hover:bg-earth-200'
               }`}
             >
               {conv.highlightText!.substring(0, 20)}...

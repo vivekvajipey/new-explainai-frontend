@@ -49,9 +49,9 @@ export default function BaseConversation({
     });
   }, [conversationSocket, conversationId]);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  // useEffect(() => {
+  //   messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // }, [messages]);
 
   const sendMessage = async (content: string) => {
     if (!conversationId) {
