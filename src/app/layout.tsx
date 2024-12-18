@@ -1,6 +1,8 @@
+// app/layout.tsx
 'use client';
 
 import "./globals.css";
+import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/lib/auth/AuthContext";
 import Script from "next/script";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -80,18 +82,25 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <Script src="https://accounts.google.com/gsi/client" async defer />
       </head>
       <body className="font-palatino antialiased bg-earth-50 text-earth-900 dark:bg-earth-900 dark:text-earth-50">
-        <AuthProvider>
-          <AuthInitializer />
-          <Header />
-          <main className="container mx-auto px-4 py-8">
-            {children}
-          </main>
-        </AuthProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider>
+            <AuthInitializer />
+            <Header />
+            <main className="container mx-auto px-4 py-8">
+              {children}
+            </main>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

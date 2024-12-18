@@ -68,9 +68,11 @@ export class BaseWebSocket {
   protected messageQueue: { event: string; data: unknown }[] = [];
   protected documentId: string;
   protected connectionPromise: Promise<void> | null = null;
+  protected token: string | null;
 
-  constructor(documentId: string, protected endpoint: string) {
+  constructor(documentId: string, protected endpoint: string, token: string | null = null) {
     this.documentId = documentId;
+    this.token = token;
     this.connectionPromise = this.connect();
   }
 
@@ -82,7 +84,12 @@ export class BaseWebSocket {
     this.isConnecting = true;
     this.connectionPromise = new Promise((resolve, reject) => {
       console.log(`Connecting to WebSocket for document ${this.documentId} at ${this.endpoint}...`);
-      const ws = new WebSocket(`${WS_BASE_URL}${this.endpoint}/${this.documentId}`);
+      
+      // Add /api/ to the path and handle token
+      const wsUrl = `${WS_BASE_URL}/api${this.endpoint}/${this.documentId}${this.token ? `?token=${this.token.replace('Bearer ', '')}` : ''}`;
+      
+      console.log('Connecting with URL:', wsUrl);
+      const ws = new WebSocket(wsUrl);
       const timeoutId = setTimeout(() => {
         cleanup();
         const error = new Error('WebSocket connection timeout');
@@ -265,8 +272,8 @@ export class BaseWebSocket {
 export class DocumentWebSocket extends BaseWebSocket {
   private pendingMetadataRequest = false;
 
-  constructor(documentId: string) {
-    super(documentId, '/documents/stream');
+  constructor(documentId: string, token: string | null = null) {
+    super(documentId, '/documents/stream', token);
   }
 
   protected connect(): Promise<void> {

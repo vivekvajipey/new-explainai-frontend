@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Send } from 'lucide-react';
-import { ConversationWebSocket } from '@/lib/websocket/ConversationWebSocket';
+import { useSocket } from '@/contexts/SocketContext';
+import { useConversationStore } from '@/stores/conversationStores';
 
 export interface Message {
   id: string;
@@ -11,127 +12,99 @@ export interface Message {
 
 export interface BaseConversationProps {
   documentId: string;
-  websocket: ConversationWebSocket;
-  onInitialize: (ws: ConversationWebSocket) => Promise<string>;
-  onSendMessage: (ws: ConversationWebSocket, content: string) => Promise<{ message: string }>;
+  conversationId: string;
+  onSendMessage: (content: string, conversationId: string) => Promise<{ message: string }>;
   placeholder?: string;
   className?: string;
 }
 
 export default function BaseConversation({ 
   documentId,
-  websocket,
-  onInitialize,
+  conversationId,
   onSendMessage,
   placeholder = 'Type a message...',
   className = ''
 }: BaseConversationProps) {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { conversationSocket } = useSocket();
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let mounted = true;
-
-    const initializeConversation = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        // Initialize using provided method
-        const newConversationId = await onInitialize(websocket);
-        if (!mounted) return;
-
-        if (!newConversationId) {
-          throw new Error('Failed to initialize conversation: No conversation ID received');
-        }
-
-        setConversationId(newConversationId);
-
-        // Try to fetch existing messages
-        if (newConversationId) {
-          try {
-            const messagesResponse = await websocket.getMessages(newConversationId);
-            if (!mounted) return;
-            
-            if (messagesResponse?.messages?.length > 0) {
-              // Filter out system messages and convert to Message format
-              const filteredMessages = messagesResponse.messages
-                .filter(msg => msg.role !== 'system')
-                .map(msg => ({
-                  id: msg.id,
-                  role: msg.role as 'user' | 'assistant',
-                  content: msg.content,
-                  timestamp: msg.timestamp
-                }));
-              setMessages(filteredMessages);
-            }
-          } catch (err) {
-            console.log('No existing messages for new conversation: ', err);
-          }
-        }
-
-        setIsLoading(false);
-      } catch (error) {
-        if (!mounted) return;
-        console.error('Failed to initialize conversation:', error);
-        setError('Failed to initialize conversation');
-        setIsLoading(false);
-      }
-    };
-
-    initializeConversation();
-
-    return () => {
-      mounted = false;
-    };
-  }, [documentId, websocket]);
+  console.log("[DEBUG] BaseConversation rendering with conversationId =", conversationId);
+  const messages = useConversationStore((state) => {
+    console.log("[DEBUG] useConversationStore selector running for conversationId =", conversationId);
+    return conversationId ? state.getMessages(conversationId) : [];
+  });
+  console.log("[DEBUG] BaseConversation got messages.length =", messages.length);
+  const addMessage = useConversationStore(state => state.addMessage);
+  // const setMessages = useConversationStore(state => state.setMessages);
+  // const removeMessage = useConversationStore(state => state.removeMessage);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    console.log("[DEBUG] BaseConversation.useEffect triggered", {
+      conversationId,
+      documentId,
+      conversationSocket: !!conversationSocket,
+    });
+  }, [conversationSocket, conversationId]);
+
+  // useEffect(() => {
+  //   messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // }, [messages]);
 
   const sendMessage = async (content: string) => {
     if (!conversationId) {
       setError('No active conversation');
       return;
     }
-
+  
+    // Don’t add to store yet. 
+    // Create a local userMessage object but keep it local for now.
     const userMessage = {
       id: Date.now().toString(),
       role: 'user' as const,
       content,
       timestamp: new Date().toISOString(),
     };
-
+  
     try {
       setIsLoading(true);
       setError(null);
-      setMessages(prev => [...prev, userMessage]);
       setInput('');
-
-      const response = await onSendMessage(websocket, content);
-
+  
+      // **Wait** until WebSocket is confirmed open:
+      if (!conversationSocket?.isConnected) {
+        // Show error or optionally queue the message
+        throw new Error('WebSocket is not connected');
+      }
+  
+      // Actually send the message over the socket:
+      const response = await onSendMessage(content, conversationId);
+  
+      // If successful, THEN add the user’s message to the store:
+      addMessage(conversationId, userMessage);
+  
+      // Then also add the assistant message if provided:
       if (response && response.message) {
-        setMessages(prev => [...prev, {
+        addMessage(conversationId, {
           id: Date.now().toString(),
           role: 'assistant',
           content: response.message,
           timestamp: new Date().toISOString(),
-        }]);
+        });
       }
-      
+  
     } catch (err) {
       console.error('Failed to send message:', err);
       setError(err instanceof Error ? err.message : 'Failed to send message');
-      setMessages(prev => prev.filter(msg => msg.id !== userMessage.id));
+      // **Do not** remove any message from the store here, 
+      // because we never actually added it if it failed.
     } finally {
       setIsLoading(false);
     }
   };
+  
 
   return (
     <div className={`flex flex-col h-[500px] bg-white dark:bg-earth-800 rounded-lg shadow-sm ${className}`}>
@@ -201,4 +174,4 @@ export default function BaseConversation({
       </div>
     </div>
   );
-} 
+}

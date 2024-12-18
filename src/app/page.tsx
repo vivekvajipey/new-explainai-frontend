@@ -97,10 +97,8 @@ export default function Home() {
   const handleTryItOut = () => {
     if (!selectedText) return;
     
-    const params = new URLSearchParams();
-    params.set('documentId', selectedText.id);
-    
-    router.push(`/chat?${params.toString()}`);
+    // Redirect to the document page with the selected document ID
+    router.push(`/documents/${selectedText.id}`);
   };
 
   return (

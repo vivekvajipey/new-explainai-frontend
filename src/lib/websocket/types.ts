@@ -1,6 +1,8 @@
+export type MessageRole = 'system' | 'user' | 'assistant';
+
 export interface Message {
   id: string;
-  role: 'user' | 'assistant' | 'system';
+  role: MessageRole;
   content: string;
   timestamp: string;
 }
@@ -30,10 +32,6 @@ export interface ChunkConversationsResponse {
   }>;
 }
 
-export interface MessageSendCompleted {
-  message: string;
-}
-
 export interface MessageSendError {
   message: string;
 }
@@ -54,6 +52,8 @@ export interface WebSocketError {
 
 export interface ConversationMessageSendCompleted {
   message: string;
+  conversation_id: string;
+  user_message_id: string;
 }
 
 export interface ConversationMessagesCompleted {
@@ -76,4 +76,4 @@ export interface ConversationChunkGetCompleted {
 export interface WebSocketMessage {
   type: string;
   data: unknown;
-} 
+}

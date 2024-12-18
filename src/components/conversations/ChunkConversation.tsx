@@ -1,44 +1,46 @@
-import { ConversationWebSocket } from '@/lib/websocket/ConversationWebSocket';
+// ChunkConversation.tsx
 import BaseConversation from './BaseConversation';
-import { useState } from 'react';
+import { useSocket } from '@/contexts/SocketContext';
 
 interface ChunkConversationProps {
   documentId: string;
   chunkId: string;
+  conversationId: string;
   highlightText: string;
-  websocket: ConversationWebSocket | null;
 }
 
 export default function ChunkConversation({ 
   documentId, 
   chunkId,
+  conversationId,
   highlightText,
-  websocket
 }: ChunkConversationProps) {
-  const [conversationId, setConversationId] = useState<string | null>(null);
+  const { conversationSocket } = useSocket();
+   
+  const handleSendMessage = async (content: string, conversationId: string) => {
+    if (!conversationSocket || !conversationId) {
+      throw new Error('No active conversation');
+    }
+
+    console.log("Sending message to chunk conversation:", conversationId, "with highlightText:", highlightText);
   
-  const handleInitialize = async (ws: ConversationWebSocket) => {
-    const newConversationId = await ws.createChunkConversation(chunkId, highlightText);
-    setConversationId(newConversationId);
-    return newConversationId;
+    const response = await conversationSocket.sendMessage(
+      conversationId,
+      content, 
+      chunkId, 
+      "highlight"
+    );
+  
+    return { message: response.message };
   };
-
-  const handleSendMessage = async (ws: ConversationWebSocket, content: string) => {
-    return ws.sendMessage(conversationId!, content, chunkId, "highlight");
-  };
-
-  if (!websocket) {
-    return <div>Loading...</div>;
-  }
 
   return (
     <BaseConversation
       documentId={documentId}
-      websocket={websocket}
-      onInitialize={handleInitialize}
+      conversationId={conversationId}
       onSendMessage={handleSendMessage}
       placeholder="Ask about this highlighted text..."
       className="border-2 border-yellow-200"
     />
   );
-} 
+}
