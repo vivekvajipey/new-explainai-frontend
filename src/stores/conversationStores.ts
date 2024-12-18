@@ -5,6 +5,15 @@ import { Message } from '@/lib/websocket/types';
 const EMPTY_ARRAY: Message[] = [];
 const sortedMessagesCache = new WeakMap<Map<string, Message>, Message[]>();
 
+interface TextHighlight {
+  id: string;
+  text: string;
+  startOffset: number;
+  endOffset: number;
+  conversationId: string;
+  chunkId: string;
+}
+
 interface ConversationStoreState {
   conversations: Map<string, {
     id: string;
@@ -13,6 +22,9 @@ interface ConversationStoreState {
     highlightText?: string;
     messages: Map<string, Message>;
   }>;
+
+  highlights: Map<string, TextHighlight>;
+  highlightsByChunk: Map<string, TextHighlight[]>;
   
   // Actions for message management
   addMessage: (conversationId: string, message: Message) => void;
@@ -35,10 +47,18 @@ interface ConversationStoreState {
     chunkId?: string;
     highlightText?: string;
   } | null;
+
+  addHighlight: (highlight: TextHighlight) => void;
+  getHighlightsForChunk: (chunkId: string) => TextHighlight[];
+
+  removeHighlight: (highlightId: string) => void;
+  removeHighlightsForChunk: (chunkId: string) => void;
 }
 
 export const useConversationStore = create<ConversationStoreState>((set, get) => ({
   conversations: new Map(),
+  highlights: new Map(),
+  highlightsByChunk: new Map(),
 
   addMessage: (conversationId, message) => set(state => {
     console.log("[DEBUG] store.addMessage called with", { conversationId, message });
@@ -53,8 +73,6 @@ export const useConversationStore = create<ConversationStoreState>((set, get) =>
       return state;
     }
   
-    // Optionally, also guard if the content & role are exactly the same as an existing message.
-    // But ID alone usually suffices, as long as it’s stable.
     
     updatedMessages.set(message.id, message);
   
@@ -149,5 +167,68 @@ export const useConversationStore = create<ConversationStoreState>((set, get) =>
         new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
       )
     };
-  }
+  },
+
+  addHighlight: (highlight) => set(state => {
+    const newHighlights = new Map(state.highlights);
+    newHighlights.set(highlight.id, highlight);
+    
+    const newHighlightsByChunk = new Map(state.highlightsByChunk);
+    newHighlightsByChunk.delete(highlight.chunkId);
+    
+    return { 
+      highlights: newHighlights,
+      highlightsByChunk: newHighlightsByChunk
+    };
+  }),
+
+  getHighlightsForChunk: (chunkId: string) => {
+    const state = get();
+    
+    // Check cache first
+    if (state.highlightsByChunk.has(chunkId)) {
+      return state.highlightsByChunk.get(chunkId)!;
+    }
+
+    // Create new sorted array and cache it
+    const highlights = Array.from(state.highlights.values())
+      .filter(h => h.chunkId === chunkId)
+      .sort((a, b) => a.startOffset - b.startOffset);
+    
+    state.highlightsByChunk.set(chunkId, highlights);
+    return highlights;
+  },
+
+  removeHighlight: (highlightId: string) => set(state => {
+    const highlight = state.highlights.get(highlightId);
+    if (!highlight) return state;
+
+    const newHighlights = new Map(state.highlights);
+    newHighlights.delete(highlightId);
+
+    const newHighlightsByChunk = new Map(state.highlightsByChunk);
+    newHighlightsByChunk.delete(highlight.chunkId);
+
+    return {
+      highlights: newHighlights,
+      highlightsByChunk: newHighlightsByChunk
+    };
+  }),
+
+  removeHighlightsForChunk: (chunkId: string) => set(state => {
+    const newHighlights = new Map(state.highlights);
+    for (const [id, highlight] of state.highlights) {
+      if (highlight.chunkId === chunkId) {
+        newHighlights.delete(id);
+      }
+    }
+
+    const newHighlightsByChunk = new Map(state.highlightsByChunk);
+    newHighlightsByChunk.delete(chunkId);
+
+    return {
+      highlights: newHighlights,
+      highlightsByChunk: newHighlightsByChunk
+    };
+  }),
 }));

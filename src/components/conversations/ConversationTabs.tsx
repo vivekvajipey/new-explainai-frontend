@@ -7,7 +7,12 @@ import { useSocket } from '@/contexts/SocketContext';
 import { useConversationStore } from '@/stores/conversationStores';
 
 export interface ConversationTabsRef {
-  createChunkConversation: (highlightText: string, chunkId: string) => void;
+  createChunkConversation: (
+    highlightText: string, 
+    chunkId: string,
+    range?: { start: number; end: number }
+  ) => Promise<void>;
+  setActiveTab: (tabId: string) => void;
 }
 
 interface ConversationTabsProps {
@@ -66,7 +71,7 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
 
     // Expose methods through ref
     useImperativeHandle(ref, () => ({
-      createChunkConversation: async (highlightText: string, chunkId: string) => {
+      createChunkConversation: async (highlightText: string, chunkId: string, range?: { start: number; end: number }) => {
         if (!conversationSocket) {
           setError('WebSocket not initialized');
           return;
@@ -78,12 +83,25 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
             highlightText
           );
 
+          // Add conversation to store
           useConversationStore.getState().addConversation({
             id: conversationId,
             type: 'chunk',
             chunkId,
             highlightText
           });
+
+          // Add highlight to store if range is provided
+          if (range) {
+            useConversationStore.getState().addHighlight({
+              id: `highlight-${Date.now()}`,
+              text: highlightText,
+              startOffset: range.start,
+              endOffset: range.end,
+              conversationId,
+              chunkId
+            });
+          }
 
           setChunkConversations(prev => [...prev, {
             id: conversationId,
@@ -98,6 +116,10 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
           console.error('Failed to create chunk conversation:', error);
           setError('Failed to create conversation');
         }
+      },
+      
+      setActiveTab: (tabId: string) => {
+        setActiveTab(tabId);
       }
     }));
 

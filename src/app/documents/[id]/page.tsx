@@ -4,10 +4,10 @@
 import { useEffect, useState, useRef, use } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import ConversationTabs from '@/components/conversations/ConversationTabs';
-import TextSelectionPopup from '@/components/TextSelectionPopup';
 import { ConversationTabsRef } from '@/components/conversations/ConversationTabs';
 import { SocketProvider, useSocket } from '@/contexts/SocketContext';
 import { DocumentMetadata, DocumentMetadataResponse } from './types';
+import { DocumentContent } from '@/components/document/DocumentContent';
 
 export default function DocumentPage({ 
   params 
@@ -54,15 +54,6 @@ function DocumentPageContent({ id }: { id: string }) {
     }
   };
 
-  const handleCreateDiscussion = (text: string) => {
-    if (!conversationTabsRef.current) return;
-    
-    conversationTabsRef.current.createChunkConversation(
-      text,
-      currentChunkIndex.toString()
-    );
-  };
-
   if (!metadata || !isConnected) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -74,6 +65,27 @@ function DocumentPageContent({ id }: { id: string }) {
   }
 
   const currentChunk = metadata.chunks[currentChunkIndex];
+
+  const handleCreateHighlight = async (text: string, range: { start: number; end: number }) => {
+    if (!conversationTabsRef.current) return;
+    
+    try {
+      // Create the conversation first
+      await conversationTabsRef.current.createChunkConversation(
+        text,
+        currentChunkIndex.toString(),
+        range // Pass the range to createChunkConversation
+      );
+    } catch (error) {
+      console.error('Failed to create highlight and conversation:', error);
+    }
+  };
+
+  const handleHighlightClick = (conversationId: string) => {
+    if (conversationTabsRef.current) {
+      conversationTabsRef.current.setActiveTab(conversationId);
+    }
+  };
 
   return (
     <div className="max-w-6xl mx-auto p-6">
@@ -112,16 +124,14 @@ function DocumentPageContent({ id }: { id: string }) {
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Document Content */}
-        <div className="bg-white dark:bg-earth-800 rounded-lg shadow-sm p-6 relative">
-          <div className="prose dark:prose-invert max-w-none">
-            <pre className="whitespace-pre-wrap font-palatino">
-              {currentChunk.content}
-            </pre>
-          </div>
-          <TextSelectionPopup onCreateDiscussion={handleCreateDiscussion} />
-        </div>
+        <DocumentContent
+          content={currentChunk.content}
+          chunkId={currentChunkIndex.toString()}
+          onHighlightClick={handleHighlightClick}
+          onCreateHighlight={handleCreateHighlight}
+        />
 
-        {/* Conversations - Only render when document is ready */}
+        {/* Conversations */}
         {isConnected && (
           <div className="h-[600px]">
             <ConversationTabs 
