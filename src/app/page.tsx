@@ -31,17 +31,16 @@ export default function Home() {
     // Load documents based on auth state
     const loadDocuments = async () => {
       try {
-        if (user && !isDemo) {
+        if (user) {
           // Load user's documents when authenticated
           const docs = await listDocuments(token, false);
           setUserDocuments(docs);
-        } else if (isDemo) {
-          // Load example documents in demo mode
+          setSelectedText(null); // Clear selection when switching to user docs
+        } else {
+          // Load example documents when not authenticated
           const docs = await listDocuments(null, true);
           setUserDocuments(docs);
-        } else {
-          // Clear documents if not authenticated and not in demo mode
-          setUserDocuments([]);
+          setSelectedText(null); // Clear selection when switching to example docs
         }
       } catch (error) {
         console.error('Failed to load documents:', error);
@@ -49,13 +48,11 @@ export default function Home() {
     };
 
     loadDocuments();
-  }, [token, isDemo, user]);
+  }, [token, user]);
 
   // Clear demo mode when user signs in
   useEffect(() => {
-    if (user) {
-      setIsDemo(false);
-    }
+    setIsDemo(!user);
   }, [user]);
 
   // Handle file upload
