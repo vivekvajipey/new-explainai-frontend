@@ -32,40 +32,60 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
 
     useEffect(() => {
       if (!conversationSocket) {
-        console.log("[DEBUG] No conversationSocket yet, skipping initMainConversation");
+        console.log("[DEBUG] No conversationSocket yet, skipping initConversations");
         return;
       }
     
-      console.log("[DEBUG] useEffect in ConversationTabs triggered for main conversation init");
+      console.log("[DEBUG] useEffect in ConversationTabs triggered for conversation init");
 
       // If we've already done init, skip
       if (hasInitializedMain.current) {
         return;
       }
     
-      const initMainConversation = async () => {
-        console.log("[DEBUG] initMainConversation called");
+      const initConversations = async () => {
+        console.log("[DEBUG] initConversations called");
         try {
-          const conversationId = await conversationSocket.createMainConversation();
-          console.log("[DEBUG] initMainConversation success, conversationId =", conversationId);
-    
-          setMainConversationId(conversationId);  // <--- React setState
-          console.log("[DEBUG] setMainConversationId called with", conversationId);
-    
-          useConversationStore.getState().addConversation({
-            id: conversationId,
-            type: 'main'
-          });
-          console.log("[DEBUG] useConversationStore.addConversation called with", conversationId);
-    
+          // 1. Request list of existing conversations
+          const conversations = await conversationSocket.listConversations();
+          const conversationIds = Object.keys(conversations);
+
+          if (conversationIds.length === 0) {
+            // No existing conversations, proceed to create a new main one
+            console.log("[DEBUG] No existing conversations found, creating main conversation");
+            const conversationId = await conversationSocket.createMainConversation();
+            console.log("[DEBUG] initMainConversation success, conversationId =", conversationId);
+
+            setMainConversationId(conversationId);
+            console.log("[DEBUG] setMainConversationId called with", conversationId);
+
+            useConversationStore.getState().addConversation({
+              id: conversationId,
+              type: 'main'
+            });
+          } else {
+            // Use first existing conversation
+            const firstConversationId = conversationIds[0];
+            console.log("[DEBUG] Existing conversations found, using:", firstConversationId);
+
+            useConversationStore.getState().addConversation({
+              id: firstConversationId,
+              type: 'main'
+            });
+
+            await conversationSocket.getMessages(firstConversationId);
+
+            setMainConversationId(firstConversationId);
+            console.log("[DEBUG] mainConversationId set to existing conversation:", firstConversationId);
+          }
         } catch (error) {
-          console.error('[DEBUG] Failed to create main conversation:', error);
-          setError('Failed to create conversation');
+          console.error('[DEBUG] Failed to load or create conversation:', error);
+          setError('Failed to load or create conversation');
         }
       };
     
-      console.log("[DEBUG] Calling initMainConversation() exactly once");
-      initMainConversation();
+      console.log("[DEBUG] Calling initConversations() exactly once");
+      initConversations();
       hasInitializedMain.current = true;
     }, [conversationSocket]);
 

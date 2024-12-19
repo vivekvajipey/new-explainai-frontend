@@ -128,7 +128,7 @@ export class ConversationWebSocket {
           data.messages.map(msg => ({
             id: msg.id,
             role: msg.role,
-            content: msg.message,
+            content: msg.content,
             timestamp: msg.created_at
           }))
         );
@@ -314,7 +314,7 @@ export class ConversationWebSocket {
 
   async getMessages(conversationId: string): Promise<ConversationResponse> {
     const response = await this.sendAndWait<ConversationMessagesCompleted>(
-      'conversation.messages.list',
+      'conversation.messages.get',
       'conversation.messages.completed',
       { conversation_id: conversationId }
     );
@@ -324,7 +324,7 @@ export class ConversationWebSocket {
       messages: response.messages.map(msg => ({
         id: msg.id,
         role: msg.role,
-        content: msg.message,
+        content: msg.content,
         timestamp: msg.created_at
       }))
     };
@@ -337,6 +337,24 @@ export class ConversationWebSocket {
       { sequence_number: chunkId },
       5000
     );
+  }
+
+  public async listConversations(): Promise<Record<string, {document_id: string, chunk_id?: number, created_at: string, highlight_text?: string}>> {
+    console.log("[DEBUG] listConversations START");
+    const response = await this.sendAndWait<{
+      conversations: Record<string, {
+        document_id: string,
+        chunk_id?: number,
+        created_at: string,
+        highlight_text?: string
+      }>
+    }>(
+      'conversation.list',
+      'conversation.list.completed',
+      {}
+    );
+    console.log("[DEBUG] listConversations SUCCESS:", response.conversations);
+    return response.conversations;
   }
 
   close(): void {

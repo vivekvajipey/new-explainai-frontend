@@ -61,7 +61,7 @@ export interface ConversationMessagesCompleted {
   messages: Array<{
     id: string;
     role: 'user' | 'assistant' | 'system';
-    message: string;
+    content: string;
     created_at: string;
   }>;
 }
