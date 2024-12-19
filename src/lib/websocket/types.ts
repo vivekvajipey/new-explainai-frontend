@@ -1,3 +1,4 @@
+// new-explainai-frontend/src/lib/websocket/ConversationWebSocket.ts
 export type MessageRole = 'system' | 'user' | 'assistant';
 
 export interface Message {
@@ -29,6 +30,7 @@ export interface ChunkConversationsResponse {
   conversations: Record<string, {
     chunk_id: string;
     highlight_text: string;
+    highlight_range?: { start: number; end: number };
   }>;
 }
 
@@ -82,4 +84,11 @@ export interface StreamingMessageHandlers {
   onToken: (fullMessage: string) => void;
   onComplete: (message: string) => void;
   onError: (error: string) => void;
+}
+
+export interface ChunkConversationPayload {
+  document_id: string;
+  chunk_id: string;
+  highlight_text: string;
+  highlight_range?: { start: number; end: number };
 }

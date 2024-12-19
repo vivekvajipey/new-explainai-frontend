@@ -8,7 +8,8 @@ import {
   ConversationCreateCompleted,
   ConversationMessageSendCompleted,
   ConversationMessagesCompleted,
-  StreamingMessageHandlers
+  StreamingMessageHandlers,
+  ChunkConversationPayload
 } from './types';
 import { useConversationStore } from '@/stores/conversationStores';
 
@@ -231,11 +232,25 @@ export class ConversationWebSocket {
     return response.conversation_id;
   }
 
-  async createChunkConversation(chunkId: string, highlightText: string): Promise<string> {
+  async createChunkConversation(
+    chunkId: string, 
+    highlightText: string, 
+    highlightRange?: { start: number; end: number }
+  ): Promise<string> {
+    const payload: ChunkConversationPayload = {
+      document_id: this.documentId,
+      chunk_id: chunkId,
+      highlight_text: highlightText
+    };
+  
+    if (highlightRange) {
+      payload.highlight_range = highlightRange;
+    }
+  
     const response = await this.sendAndWait<ConversationCreateCompleted>(
       'conversation.chunk.create',
       'conversation.chunk.create.completed',
-      { document_id: this.documentId, chunk_id: chunkId, highlight_text: highlightText }
+      payload
     );
     return response.conversation_id;
   }

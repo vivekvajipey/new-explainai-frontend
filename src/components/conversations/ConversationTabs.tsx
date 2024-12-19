@@ -82,6 +82,51 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
           console.error('[DEBUG] Failed to load or create conversation:', error);
           setError('Failed to load or create conversation');
         }
+
+
+        // Loading chunk conversations
+        try {
+          // Fetch chunk conversations for the current sequence
+          const chunkConvResponse = await conversationSocket.getChunkConversations(currentSequence);
+          const chunkConvIds = Object.keys(chunkConvResponse.conversations);
+        
+          for (const convId of chunkConvIds) {
+            const convData = chunkConvResponse.conversations[convId];
+            const { highlight_text, chunk_id } = convData;
+            
+            // Add the chunk conversation to the store
+            useConversationStore.getState().addConversation({
+              id: convId,
+              type: 'chunk',
+              chunkId: chunk_id.toString(),
+              highlightText: highlight_text
+            });
+        
+            // If highlight_range is returned by the backend, add that highlight as well
+            if (convData.highlight_range) {
+              const { start, end } = convData.highlight_range;
+              useConversationStore.getState().addHighlight({
+                id: `highlight-${Date.now()}-${convId}`,
+                text: highlight_text,
+                startOffset: start,
+                endOffset: end,
+                conversationId: convId,
+                chunkId: chunk_id.toString(),
+              });
+            }
+        
+            // Add this chunk conversation to local state so it shows up as a tab
+            setChunkConversations(prev => [...prev, {
+              id: convId,
+              type: 'chunk',
+              chunkId: chunk_id.toString(),
+              highlightText: highlight_text,
+              messages: []
+            }]);
+          }
+        } catch (e) {
+          console.error('Failed to load chunk conversations:', e);
+        }
       };
     
       console.log("[DEBUG] Calling initConversations() exactly once");
@@ -100,7 +145,8 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
         try {
           const conversationId = await conversationSocket.createChunkConversation(
             chunkId,
-            highlightText
+            highlightText,
+            range
           );
 
           // Add conversation to store
