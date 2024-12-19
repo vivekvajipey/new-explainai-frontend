@@ -92,8 +92,14 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
         
           for (const convId of chunkConvIds) {
             const convData = chunkConvResponse.conversations[convId];
-            const { highlight_text, chunk_id } = convData;
-            
+            const { highlight_text, chunk_id, highlight_range } = convData;
+        
+            // Skip if highlight_text is empty or missing
+            if (!highlight_text || highlight_text.trim() === "") {
+              console.log(`[DEBUG] Skipping chunk conversation ${convId} because highlight_text is empty`);
+              continue;
+            }
+        
             // Add the chunk conversation to the store
             useConversationStore.getState().addConversation({
               id: convId,
@@ -102,26 +108,31 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
               highlightText: highlight_text
             });
         
-            // If highlight_range is returned by the backend, add that highlight as well
-            if (convData.highlight_range) {
-              const { start, end } = convData.highlight_range;
+            // If a highlight_range exists, add it as a highlight
+            if (highlight_range && highlight_range.start !== undefined && highlight_range.end !== undefined) {
               useConversationStore.getState().addHighlight({
                 id: `highlight-${Date.now()}-${convId}`,
                 text: highlight_text,
-                startOffset: start,
-                endOffset: end,
+                startOffset: highlight_range.start,
+                endOffset: highlight_range.end,
                 conversationId: convId,
                 chunkId: chunk_id.toString(),
               });
             }
         
-            // Add this chunk conversation to local state so it shows up as a tab
+            // Load the messages for this chunk conversation
+            await conversationSocket.getMessages(convId);
+        
+            // Retrieve the messages from the store
+            const messages = useConversationStore.getState().getMessages(convId);
+        
+            // Add this chunk conversation to local state so it appears as a tab with messages
             setChunkConversations(prev => [...prev, {
               id: convId,
               type: 'chunk',
               chunkId: chunk_id.toString(),
               highlightText: highlight_text,
-              messages: []
+              messages
             }]);
           }
         } catch (e) {
