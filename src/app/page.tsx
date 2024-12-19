@@ -14,7 +14,7 @@ export default function Home() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [isDemo, setIsDemo] = useState(false);
+  const [isDemo, setIsDemo] = useState(!user); // Default to demo mode when not logged in
 
   useEffect(() => {
     // Check for token from login.html
@@ -123,21 +123,6 @@ export default function Home() {
         <p className="text-xl text-earth-600 dark:text-earth-400 mb-8 max-w-2xl mx-auto">
           Upload any document and start a conversation. Our AI will help you understand, analyze, and extract insights from your text.
         </p>
-
-        {/* Demo Button - Show when not logged in and not in demo mode */}
-        {!user && !isDemo && (
-          <button
-            onClick={() => setIsDemo(true)}
-            className="inline-flex items-center px-8 py-4 bg-earth-600 hover:bg-earth-700 text-earth-50 
-              font-medium rounded-xl transition-all shadow-md hover:shadow-lg gap-2 text-lg
-              border border-earth-500 hover:border-earth-600"
-          >
-            <span>Try Demo</span>
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-            </svg>
-          </button>
-        )}
       </section>
 
       {/* Main Content */}
@@ -145,10 +130,10 @@ export default function Home() {
         <div className="bg-earth-50/80 dark:bg-earth-800/80 backdrop-blur-lg rounded-3xl p-12 max-w-3xl mx-auto shadow-2xl shadow-earth-900/5 dark:shadow-earth-900/20 border border-earth-200/50 dark:border-earth-700/50">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-earth-900 dark:text-earth-50 mb-4">
-              {isDemo ? "Try Our Example Documents" : user ? "Your Documents" : "Get Started"}
+              {isDemo ? "Try Our Example Documents" : user ? "Your Documents" : "Try Our Example Documents"}
             </h2>
             <p className="text-earth-600 dark:text-earth-400">
-              {isDemo ? "Select an example document to analyze" : user ? "Select or upload a document to analyze" : "Sign in or try our demo to get started"}
+              {isDemo ? "Select an example document to analyze" : user ? "Select or upload a document to analyze" : "Select an example document to analyze"}
             </p>
           </div>
 

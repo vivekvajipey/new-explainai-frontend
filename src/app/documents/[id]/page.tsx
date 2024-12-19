@@ -70,11 +70,10 @@ function DocumentPageContent({ id }: { id: string }) {
     if (!conversationTabsRef.current) return;
     
     try {
-      // Create the conversation first
       await conversationTabsRef.current.createChunkConversation(
         text,
         currentChunkIndex.toString(),
-        range // Pass the range to createChunkConversation
+        range
       );
     } catch (error) {
       console.error('Failed to create highlight and conversation:', error);

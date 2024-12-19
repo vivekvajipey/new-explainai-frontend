@@ -50,9 +50,11 @@ interface ConversationStoreState {
 
   addHighlight: (highlight: TextHighlight) => void;
   getHighlightsForChunk: (chunkId: string) => TextHighlight[];
-
   removeHighlight: (highlightId: string) => void;
   removeHighlightsForChunk: (chunkId: string) => void;
+  
+  // Clear all state
+  clearAll: () => void;
 }
 
 export const useConversationStore = create<ConversationStoreState>((set, get) => ({
@@ -231,4 +233,10 @@ export const useConversationStore = create<ConversationStoreState>((set, get) =>
       highlightsByChunk: newHighlightsByChunk
     };
   }),
+
+  clearAll: () => set(() => ({
+    conversations: new Map(),
+    highlights: new Map(),
+    highlightsByChunk: new Map()
+  }))
 }));

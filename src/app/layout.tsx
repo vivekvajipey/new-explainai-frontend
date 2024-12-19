@@ -8,6 +8,9 @@ import Script from "next/script";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { initializeGoogleAuth } from "@/lib/auth/google";
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSocket } from "@/contexts/SocketContext";
+import { useConversationStore } from "@/stores/conversationStores";
 
 function AuthInitializer() {
   const { login } = useAuth();
@@ -24,7 +27,25 @@ function AuthInitializer() {
 }
 
 function Header() {
+  const router = useRouter();
   const { user, logout } = useAuth();
+  const { documentSocket } = useSocket();
+
+  const handleSignOut = () => {
+    // Close WebSocket connections
+    if (documentSocket) {
+      documentSocket.close();
+    }
+    
+    // Clear conversation store
+    useConversationStore.getState().clearAll();
+    
+    // Log out (clears auth state and localStorage)
+    logout();
+    
+    // Redirect to home page
+    router.push('/');
+  };
 
   return (
     <header className="border-b border-earth-200 dark:border-earth-800 bg-earth-50/50 dark:bg-earth-900/50 backdrop-blur-sm">
@@ -51,7 +72,7 @@ function Header() {
               </span>
             </div>
             <button
-              onClick={logout}
+              onClick={handleSignOut}
               className="px-4 py-2 text-sm font-medium text-earth-600 dark:text-earth-400 hover:text-earth-900 dark:hover:text-earth-50 hover:bg-earth-100 dark:hover:bg-earth-800 rounded-lg transition-all inline-flex items-center gap-2"
             >
               <span>Sign Out</span>
