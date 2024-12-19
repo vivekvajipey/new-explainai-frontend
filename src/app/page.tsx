@@ -102,7 +102,7 @@ export default function Home() {
   };
 
   return (
-    <div className="space-y-16 max-w-6xl mx-auto">
+    <div className="space-y-8 max-w-6xl mx-auto">
       {/* Top Navigation */}
       <nav className="fixed top-0 right-0 p-6 z-50">
         {!user && (
@@ -116,7 +116,7 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section className="text-center py-16">
+      <section className="text-center pt-16 pb-8">
         <h1 className="text-5xl font-bold text-earth-900 dark:text-earth-50 mb-6">
           Understand Any Document with AI
         </h1>
@@ -198,6 +198,31 @@ export default function Home() {
                                 </span>
                               </button>
                             ))}
+                            
+                            {/* Add Upload Document option for non-logged-in users */}
+                            {!user && (
+                              <>
+                                <div className="px-4 py-2 text-sm font-medium text-earth-500 dark:text-earth-400 border-t border-earth-200 dark:border-earth-700 mt-2">
+                                  Upload Your Own
+                                </div>
+                                <a
+                                  href="/login.html"
+                                  className="w-full text-left px-4 py-3 flex items-center gap-2 text-earth-400 dark:text-earth-500 hover:bg-earth-50 dark:hover:bg-earth-800 cursor-pointer group"
+                                >
+                                  <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                  </svg>
+                                  <div>
+                                    <span className="block font-medium group-hover:text-earth-600 dark:group-hover:text-earth-300">
+                                      Upload Document
+                                    </span>
+                                    <span className="block text-sm">
+                                      Sign in to upload your own documents
+                                    </span>
+                                  </div>
+                                </a>
+                              </>
+                            )}
                           </div>
                         ) : (
                           <div className="px-4 py-3 text-sm text-earth-500 dark:text-earth-400">
