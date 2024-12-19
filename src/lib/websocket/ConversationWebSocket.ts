@@ -125,12 +125,14 @@ export class ConversationWebSocket {
       (data) => {
         useConversationStore.getState().setMessages(
           data.conversation_id,
-          data.messages.map(msg => ({
-            id: msg.id,
-            role: msg.role,
-            content: msg.content,
-            timestamp: msg.created_at
-          }))
+          data.messages
+            .filter(msg => msg.role !== 'system')
+            .map(msg => ({
+              id: msg.id,
+              role: msg.role,
+              content: msg.content,
+              timestamp: msg.created_at
+            }))
         );
       }
     );
