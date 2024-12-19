@@ -8,6 +8,7 @@ import {
   ConversationCreateCompleted,
   ConversationMessageSendCompleted,
   ConversationMessagesCompleted,
+  StreamingMessageHandlers
 } from './types';
 import { useConversationStore } from '@/stores/conversationStores';
 
@@ -254,6 +255,61 @@ export class ConversationWebSocket {
       },
       30000 
     );
+  }
+
+  async sendMessageWithStreaming(
+    conversationId: string,
+    content: string,
+    handlers: StreamingMessageHandlers,
+    chunkId?: string,
+    conversationType?: string
+  ): Promise<ConversationMessageSendCompleted> {
+    await this.waitForConnection();
+
+    let fullMessage = '';
+    let isComplete = false;
+
+    // Set up streaming handlers
+    const tokenHandler = (data: { token: string }) => {
+      if (!isComplete) {  // Only process tokens before completion
+        fullMessage += data.token;
+        handlers.onToken(fullMessage);
+      }
+    };
+
+    // Add handlers for streaming
+    this.onMessage('chat.token', tokenHandler);
+
+    try {
+      // Send the message and wait for completion
+      const response = await this.sendAndWait<ConversationMessageSendCompleted>(
+        'conversation.message.send',
+        'conversation.message.send.completed',
+        {
+          conversation_id: conversationId,
+          content,
+          chunk_id: chunkId,
+          conversation_type: conversationType
+        },
+        30000
+      );
+      
+      isComplete = true;
+      console.log("Token aggregation check:", {
+        aggregatedLength: fullMessage.length,
+        responseLength: response.message.length,
+        isEqual: response.message === fullMessage
+      });
+
+      // Use the longer message to ensure we don't lose content
+      const finalMessage = fullMessage.length >= response.message.length ? fullMessage : response.message;
+      response.message = finalMessage;
+
+      return response;
+    } finally {
+      // Clean up handlers
+      this.removeHandler('chat.token', tokenHandler);
+    }
   }
 
   async getMessages(conversationId: string): Promise<ConversationResponse> {

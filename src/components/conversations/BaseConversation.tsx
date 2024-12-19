@@ -13,9 +13,15 @@ export interface Message {
 export interface BaseConversationProps {
   documentId: string;
   conversationId: string;
-  onSendMessage: (content: string, conversationId: string) => Promise<{ message: string }>;
   placeholder?: string;
   className?: string;
+  streamingMessageId?: string;
+  isStreaming?: boolean;
+  onSendMessage: (
+    content: string, 
+    conversationId: string, 
+    setStreamingContent: (content: string) => void
+  ) => Promise<{ message: string }>;
 }
 
 export default function BaseConversation({ 
@@ -23,13 +29,17 @@ export default function BaseConversation({
   conversationId,
   onSendMessage,
   placeholder = 'Type a message...',
-  className = ''
+  className = '',
+  streamingMessageId,
+  isStreaming = false,
 }: BaseConversationProps) {
   const { conversationSocket } = useSocket();
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [streamingContent, setStreamingContent] = useState<string>('');
+  const [isThinking, setIsThinking] = useState(false);
 
   console.log("[DEBUG] BaseConversation rendering with conversationId =", conversationId);
   const messages = useConversationStore((state) => {
@@ -37,6 +47,7 @@ export default function BaseConversation({
     return conversationId ? state.getMessages(conversationId) : [];
   });
   console.log("[DEBUG] BaseConversation got messages.length =", messages.length);
+  console.log("documentId =", documentId);
   const addMessage = useConversationStore(state => state.addMessage);
   // const setMessages = useConversationStore(state => state.setMessages);
   // const removeMessage = useConversationStore(state => state.removeMessage);
@@ -44,7 +55,7 @@ export default function BaseConversation({
   useEffect(() => {
     console.log("[DEBUG] BaseConversation.useEffect triggered", {
       conversationId,
-      documentId,
+      // documentId,
       conversationSocket: !!conversationSocket,
     });
   }, [conversationSocket, conversationId]);
@@ -69,39 +80,24 @@ export default function BaseConversation({
     };
   
     try {
-      setIsLoading(true);
+      setIsThinking(true);
       setError(null);
       setInput('');
-  
-      // **Wait** until WebSocket is confirmed open:
+      setStreamingContent('');
+
       if (!conversationSocket?.isConnected) {
-        // Show error or optionally queue the message
         throw new Error('WebSocket is not connected');
       }
-  
-      // Actually send the message over the socket:
-      const response = await onSendMessage(content, conversationId);
-  
-      // If successful, THEN add the user’s message to the store:
+
       addMessage(conversationId, userMessage);
-  
-      // Then also add the assistant message if provided:
-      if (response && response.message) {
-        addMessage(conversationId, {
-          id: Date.now().toString(),
-          role: 'assistant',
-          content: response.message,
-          timestamp: new Date().toISOString(),
-        });
-      }
-  
+
+      await onSendMessage(content, conversationId, setStreamingContent);
+
     } catch (err) {
       console.error('Failed to send message:', err);
       setError(err instanceof Error ? err.message : 'Failed to send message');
-      // **Do not** remove any message from the store here, 
-      // because we never actually added it if it failed.
     } finally {
-      setIsLoading(false);
+      setIsThinking(false);
     }
   };
   
@@ -122,11 +118,15 @@ export default function BaseConversation({
                   : 'bg-earth-50 dark:bg-earth-600'
               }`}
             >
-              <p className="text-earth-900 dark:text-earth-50">{message.content}</p>
+              <p className="text-earth-900 dark:text-earth-50">
+                {message.id === streamingMessageId && isStreaming
+                  ? streamingContent
+                  : message.content}
+              </p>
             </div>
           </div>
         ))}
-        {isLoading && (
+        {isThinking && (
           <div className="flex justify-start">
             <div className="bg-earth-50 dark:bg-earth-600 rounded-lg p-3">
               <div className="animate-pulse">Thinking...</div>
@@ -157,13 +157,13 @@ export default function BaseConversation({
             className="flex-1 px-4 py-2 rounded-lg border border-earth-200 dark:border-earth-600 
                      bg-white dark:bg-earth-700 text-earth-900 dark:text-earth-50
                      focus:outline-none focus:ring-2 focus:ring-earth-500"
-            disabled={isLoading || !conversationId}
+            disabled={isThinking || isStreaming || !conversationId}
           />
           <button
             onClick={() => sendMessage(input)}
-            disabled={isLoading || !conversationId || !input.trim()}
+            disabled={isThinking || isStreaming || !conversationId || !input.trim()}
             className={`p-2 rounded-lg ${
-              isLoading || !conversationId || !input.trim()
+              isThinking || isStreaming || !conversationId || !input.trim()
                 ? 'bg-earth-300 cursor-not-allowed'
                 : 'bg-earth-600 hover:bg-earth-700'
             } text-white`}

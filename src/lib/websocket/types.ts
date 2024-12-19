@@ -77,3 +77,9 @@ export interface WebSocketMessage {
   type: string;
   data: unknown;
 }
+
+export interface StreamingMessageHandlers {
+  onToken: (fullMessage: string) => void;
+  onComplete: (message: string) => void;
+  onError: (error: string) => void;
+}

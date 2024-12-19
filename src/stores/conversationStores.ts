@@ -1,4 +1,4 @@
-// src/stores/conversationStore.ts
+// src/stores/conversationStores.ts
 import { create } from 'zustand';
 import { Message } from '@/lib/websocket/types';
 
@@ -65,17 +65,11 @@ export const useConversationStore = create<ConversationStoreState>((set, get) =>
   addMessage: (conversationId, message) => set(state => {
     console.log("[DEBUG] store.addMessage called with", { conversationId, message });
     const conversation = state.conversations.get(conversationId);
-    if (!conversation) return state; // No change if conversation doesn't exist
+    if (!conversation) return state;
   
     const updatedMessages = new Map(conversation.messages);
-  
-    // 1) Check for an existing message with the same ID
-    if (updatedMessages.has(message.id)) {
-      console.log("[DEBUG] Duplicate message prevented. Already have message with id=", message.id);
-      return state;
-    }
-  
     
+    // Update existing message or add new one
     updatedMessages.set(message.id, message);
   
     const newConversations = new Map(state.conversations);
@@ -83,6 +77,9 @@ export const useConversationStore = create<ConversationStoreState>((set, get) =>
       ...conversation,
       messages: updatedMessages
     });
+  
+    // Clear the cache since we've updated a message
+    sortedMessagesCache.delete(conversation.messages);
   
     return { conversations: newConversations };
   }),
