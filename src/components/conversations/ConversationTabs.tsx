@@ -37,8 +37,8 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
       }
     
       console.log("[DEBUG] useEffect in ConversationTabs triggered for conversation init");
-
-      // If we've already done init, skip
+    
+      // If we've already done init for the main conversation, skip this part
       if (hasInitializedMain.current) {
         return;
       }
@@ -49,16 +49,16 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
           // 1. Request list of existing conversations
           const conversations = await conversationSocket.listConversations();
           const conversationIds = Object.keys(conversations);
-
+    
           if (conversationIds.length === 0) {
-            // No existing conversations, proceed to create a new main one
+            // No existing conversations, create a new main one
             console.log("[DEBUG] No existing conversations found, creating main conversation");
             const conversationId = await conversationSocket.createMainConversation();
             console.log("[DEBUG] initMainConversation success, conversationId =", conversationId);
-
+    
             setMainConversationId(conversationId);
             console.log("[DEBUG] setMainConversationId called with", conversationId);
-
+    
             useConversationStore.getState().addConversation({
               id: conversationId,
               type: 'main'
@@ -67,48 +67,52 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
             // Use first existing conversation
             const firstConversationId = conversationIds[0];
             console.log("[DEBUG] Existing conversations found, using:", firstConversationId);
-
+    
             useConversationStore.getState().addConversation({
               id: firstConversationId,
               type: 'main'
             });
-
+    
             await conversationSocket.getMessages(firstConversationId);
-
+    
             setMainConversationId(firstConversationId);
             console.log("[DEBUG] mainConversationId set to existing conversation:", firstConversationId);
           }
+    
+          // Load chunk conversations for the initial currentSequence (usually 0)
+          // This initial load happens once
+          await loadChunkConversationsForSequence();
         } catch (error) {
           console.error('[DEBUG] Failed to load or create conversation:', error);
           setError('Failed to load or create conversation');
         }
-
-
-        // Loading chunk conversations
+      };
+    
+      const loadChunkConversationsForSequence = async () => {
+        if (!conversationSocket || !mainConversationId) return;
         try {
-          // Fetch chunk conversations for the current sequence
           const chunkConvResponse = await conversationSocket.getChunkConversations(currentSequence);
           const chunkConvIds = Object.keys(chunkConvResponse.conversations);
-        
+    
+          // Clear out the old chunk conversations if desired
+          setChunkConversations([]);
+    
           for (const convId of chunkConvIds) {
             const convData = chunkConvResponse.conversations[convId];
             const { highlight_text, chunk_id, highlight_range } = convData;
-        
-            // Skip if highlight_text is empty or missing
+    
             if (!highlight_text || highlight_text.trim() === "") {
               console.log(`[DEBUG] Skipping chunk conversation ${convId} because highlight_text is empty`);
               continue;
             }
-        
-            // Add the chunk conversation to the store
+    
             useConversationStore.getState().addConversation({
               id: convId,
               type: 'chunk',
               chunkId: chunk_id.toString(),
               highlightText: highlight_text
             });
-        
-            // If a highlight_range exists, add it as a highlight
+    
             if (highlight_range && highlight_range.start !== undefined && highlight_range.end !== undefined) {
               useConversationStore.getState().addHighlight({
                 id: `highlight-${Date.now()}-${convId}`,
@@ -119,14 +123,10 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
                 chunkId: chunk_id.toString(),
               });
             }
-        
-            // Load the messages for this chunk conversation
+    
             await conversationSocket.getMessages(convId);
-        
-            // Retrieve the messages from the store
+    
             const messages = useConversationStore.getState().getMessages(convId);
-        
-            // Add this chunk conversation to local state so it appears as a tab with messages
             setChunkConversations(prev => [...prev, {
               id: convId,
               type: 'chunk',
@@ -144,6 +144,65 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
       initConversations();
       hasInitializedMain.current = true;
     }, [conversationSocket]);
+
+    useEffect(() => {
+      // If mainConversationId or conversationSocket aren't set yet, skip
+      if (!conversationSocket || !mainConversationId) return;
+    
+      // This effect re-runs when currentSequence changes, reloading the chunk conversations for that chunk.
+      const loadChunkForNewSequence = async () => {
+        try {
+          // Clear out old chunk conversations for a clean slate if desired
+          setChunkConversations([]);
+    
+          const chunkConvResponse = await conversationSocket.getChunkConversations(currentSequence);
+          const chunkConvIds = Object.keys(chunkConvResponse.conversations);
+    
+          for (const convId of chunkConvIds) {
+            const convData = chunkConvResponse.conversations[convId];
+            const { highlight_text, chunk_id, highlight_range } = convData;
+    
+            if (!highlight_text || highlight_text.trim() === "") {
+              console.log(`[DEBUG] Skipping chunk conversation ${convId} because highlight_text is empty`);
+              continue;
+            }
+    
+            useConversationStore.getState().addConversation({
+              id: convId,
+              type: 'chunk',
+              chunkId: chunk_id.toString(),
+              highlightText: highlight_text
+            });
+    
+            if (highlight_range && highlight_range.start !== undefined && highlight_range.end !== undefined) {
+              useConversationStore.getState().addHighlight({
+                id: `highlight-${Date.now()}-${convId}`,
+                text: highlight_text,
+                startOffset: highlight_range.start,
+                endOffset: highlight_range.end,
+                conversationId: convId,
+                chunkId: chunk_id.toString(),
+              });
+            }
+    
+            await conversationSocket.getMessages(convId);
+    
+            const messages = useConversationStore.getState().getMessages(convId);
+            setChunkConversations(prev => [...prev, {
+              id: convId,
+              type: 'chunk',
+              chunkId: chunk_id.toString(),
+              highlightText: highlight_text,
+              messages
+            }]);
+          }
+        } catch (e) {
+          console.error('Failed to load chunk conversations:', e);
+        }
+      };
+    
+      loadChunkForNewSequence();
+    }, [conversationSocket, mainConversationId, currentSequence]);
 
     // Expose methods through ref
     useImperativeHandle(ref, () => ({
