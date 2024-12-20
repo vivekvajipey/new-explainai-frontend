@@ -37,9 +37,7 @@ export default function BaseConversation({
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
-
   const [streamingContent, setStreamingContent] = useState<string>('');
-  const [isThinking, setIsThinking] = useState(false);
 
   console.log("[DEBUG] BaseConversation rendering with conversationId =", conversationId);
   const messages = useConversationStore((state) => {
@@ -70,8 +68,6 @@ export default function BaseConversation({
       return;
     }
   
-    // Don’t add to store yet. 
-    // Create a local userMessage object but keep it local for now.
     const userMessage = {
       id: Date.now().toString(),
       role: 'user' as const,
@@ -80,7 +76,6 @@ export default function BaseConversation({
     };
   
     try {
-      setIsThinking(true);
       setError(null);
       setInput('');
       setStreamingContent('');
@@ -96,8 +91,6 @@ export default function BaseConversation({
     } catch (err) {
       console.error('Failed to send message:', err);
       setError(err instanceof Error ? err.message : 'Failed to send message');
-    } finally {
-      setIsThinking(false);
     }
   };
   
@@ -126,13 +119,6 @@ export default function BaseConversation({
             </div>
           </div>
         ))}
-        {isThinking && (
-          <div className="flex justify-start">
-            <div className="bg-earth-50 dark:bg-earth-600 rounded-lg p-3">
-              <div className="animate-pulse">Thinking...</div>
-            </div>
-          </div>
-        )}
         {error && (
           <div className="text-red-500 text-center p-2">
             {error}
@@ -157,13 +143,13 @@ export default function BaseConversation({
             className="flex-1 px-4 py-2 rounded-lg border border-earth-200 dark:border-earth-600 
                      bg-white dark:bg-earth-700 text-earth-900 dark:text-earth-50
                      focus:outline-none focus:ring-2 focus:ring-earth-500"
-            disabled={isThinking || isStreaming || !conversationId}
+            disabled={isStreaming || !conversationId}
           />
           <button
             onClick={() => sendMessage(input)}
-            disabled={isThinking || isStreaming || !conversationId || !input.trim()}
+            disabled={isStreaming || !conversationId || !input.trim()}
             className={`p-2 rounded-lg ${
-              isThinking || isStreaming || !conversationId || !input.trim()
+              isStreaming || !conversationId || !input.trim()
                 ? 'bg-earth-300 cursor-not-allowed'
                 : 'bg-earth-600 hover:bg-earth-700'
             } text-white`}
