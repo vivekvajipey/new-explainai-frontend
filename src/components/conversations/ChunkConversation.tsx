@@ -19,9 +19,9 @@ export default function ChunkConversation({
 }: ChunkConversationProps) {
   const { conversationSocket } = useSocket();
   const addMessage = useConversationStore(state => state.addMessage);
-  const updateMessageRef = useRef<NodeJS.Timeout | null>(null);
   const [currentStreamingId, setCurrentStreamingId] = useState<string | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
+  const accumulatedContentRef = useRef<string>('');
 
   const handleSendMessage = async (
     content: string, 
@@ -33,10 +33,17 @@ export default function ChunkConversation({
     }
 
     const messageId = `streaming-${Date.now()}`;
-    let accumulatedContent = '';
+    accumulatedContentRef.current = '';
     
     setCurrentStreamingId(messageId);
     setIsStreaming(true);
+
+    addMessage(conversationId, {
+      id: messageId,
+      role: 'assistant',
+      content: '',
+      timestamp: new Date().toISOString(),
+    });
 
     try {
       console.log("Sending message to chunk conversation:", conversationId, "with highlightText:", highlightText);
@@ -46,40 +53,28 @@ export default function ChunkConversation({
         content,
         {
           onToken: (fullMessage) => {
-            accumulatedContent = fullMessage;
+            accumulatedContentRef.current = fullMessage;
             setStreamingContent(fullMessage);
-            
-            if (updateMessageRef.current) {
-              clearTimeout(updateMessageRef.current);
-            }
-            
-            updateMessageRef.current = setTimeout(() => {
-              addMessage(conversationId, {
-                id: messageId,
-                role: 'assistant',
-                content: accumulatedContent,
-                timestamp: new Date().toISOString(),
-              });
-            }, 100);
-          },
-          onComplete: (message) => {
-            console.log("final message equivalent to accumulated content", message === accumulatedContent);
-
-            if (updateMessageRef.current) {
-              clearTimeout(updateMessageRef.current);
-            }
             
             addMessage(conversationId, {
               id: messageId,
               role: 'assistant',
-              content: accumulatedContent,
+              content: fullMessage,
+              timestamp: new Date().toISOString(),
+            });
+          },
+          onComplete: () => {
+            const finalContent = accumulatedContentRef.current;
+            console.log("Stream completed, final content:", finalContent);
+
+            addMessage(conversationId, {
+              id: messageId,
+              role: 'assistant',
+              content: finalContent,
               timestamp: new Date().toISOString(),
             });
           },
           onError: (error) => {
-            if (updateMessageRef.current) {
-              clearTimeout(updateMessageRef.current);
-            }
             throw new Error(error);
           }
         },
@@ -91,15 +86,14 @@ export default function ChunkConversation({
     } finally {
       setCurrentStreamingId(null);
       setIsStreaming(false);
+      accumulatedContentRef.current = '';
     }
   };
 
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
-      if (updateMessageRef.current) {
-        clearTimeout(updateMessageRef.current);
-      }
+      // No cleanup needed
     };
   }, []);
 
