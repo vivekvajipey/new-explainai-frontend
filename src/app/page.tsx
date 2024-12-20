@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { uploadDocument, listDocuments } from '@/lib/api';
+import { uploadDocument, listDocuments, deleteDocument } from '@/lib/api';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { Document } from '@/types';
 
@@ -15,6 +15,9 @@ export default function Home() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isDemo, setIsDemo] = useState(!user); // Default to demo mode when not logged in
+  const [documentToDelete, setDocumentToDelete] = useState<Document | null>(null);
+  const [confirmEmail, setConfirmEmail] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     // Check for token from login.html
@@ -98,6 +101,32 @@ export default function Home() {
     router.push(`/documents/${selectedText.id}`);
   };
 
+  const handleDeleteDocument = async (doc: Document) => {
+    if (!token || !user) return;
+    
+    try {
+      setIsDeleting(true);
+      await deleteDocument(doc.id, token);
+      
+      // Refresh documents list
+      const docs = await listDocuments(token, false);
+      setUserDocuments(docs);
+      
+      // Clear states
+      setDocumentToDelete(null);
+      setConfirmEmail('');
+      
+      // If the deleted document was selected, clear selection
+      if (selectedText?.id === doc.id) {
+        setSelectedText(null);
+      }
+    } catch (error) {
+      console.error('Failed to delete document:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="space-y-8 max-w-6xl mx-auto">
       {/* Top Navigation */}
@@ -178,22 +207,38 @@ export default function Home() {
                               {isDemo ? 'Example Documents' : 'Your Documents'}
                             </div>
                             {userDocuments.map((doc) => (
-                              <button
+                              <div
                                 key={doc.id}
-                                onClick={() => {
-                                  setSelectedText(doc);
-                                  setIsDropdownOpen(false);
-                                }}
-                                className={`w-full text-left px-4 py-2 hover:bg-earth-50 dark:hover:bg-earth-800
-                                  ${selectedText?.id === doc.id ? 'bg-earth-100 dark:bg-earth-700' : ''}`}
+                                className="flex items-center justify-between px-4 py-2 hover:bg-earth-50 dark:hover:bg-earth-800"
                               >
-                                <span className="block text-earth-900 dark:text-earth-50 font-medium">
-                                  {doc.title}
-                                </span>
-                                <span className="block text-sm text-earth-500 dark:text-earth-400">
-                                  Added {new Date(doc.created_at).toLocaleDateString()}
-                                </span>
-                              </button>
+                                <button
+                                  onClick={() => {
+                                    setSelectedText(doc);
+                                    setIsDropdownOpen(false);
+                                  }}
+                                  className={`flex-grow text-left ${
+                                    selectedText?.id === doc.id ? 'bg-earth-100 dark:bg-earth-700' : ''
+                                  }`}
+                                >
+                                  <span className="block text-earth-900 dark:text-earth-50 font-medium">
+                                    {doc.title}
+                                  </span>
+                                </button>
+                                {!isDemo && user && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setDocumentToDelete(doc);
+                                    }}
+                                    className="ml-2 px-3 py-1 text-sm text-red-600 hover:text-red-700 
+                                             dark:text-red-400 dark:hover:text-red-300 
+                                             hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg
+                                             transition-colors"
+                                  >
+                                    Delete
+                                  </button>
+                                )}
+                              </div>
                             ))}
                             
                             {/* Add Upload Document option for non-logged-in users */}
@@ -295,6 +340,52 @@ export default function Home() {
           </div>
         </div>
       </section>
+      {/* Delete Confirmation Modal */}
+      {documentToDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-earth-800 rounded-xl p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold text-earth-900 dark:text-earth-50 mb-4">
+              Delete Document
+            </h3>
+            <p className="text-earth-600 dark:text-earth-400 mb-4">
+              This action cannot be undone. To confirm deletion of &ldquo;{documentToDelete.title}&rdquo;, 
+              please type your email address: {user?.email}
+            </p>
+            <input
+              type="email"
+              value={confirmEmail}
+              onChange={(e) => setConfirmEmail(e.target.value)}
+              placeholder="Enter your email"
+              className="w-full px-4 py-2 rounded-lg border border-earth-200 dark:border-earth-700 
+                       bg-white dark:bg-earth-900 text-earth-900 dark:text-earth-50 mb-4
+                       focus:outline-none focus:ring-2 focus:ring-earth-500"
+            />
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setDocumentToDelete(null);
+                  setConfirmEmail('');
+                }}
+                className="px-4 py-2 text-earth-600 hover:text-earth-700 
+                         dark:text-earth-400 dark:hover:text-earth-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteDocument(documentToDelete)}
+                disabled={confirmEmail !== user?.email || isDeleting}
+                className={`px-4 py-2 rounded-lg ${
+                  confirmEmail === user?.email && !isDeleting
+                    ? 'bg-red-600 hover:bg-red-700 text-white'
+                    : 'bg-earth-300 text-earth-500 cursor-not-allowed'
+                }`}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete Document'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

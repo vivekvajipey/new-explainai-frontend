@@ -57,6 +57,20 @@ export async function listDocuments(token: string | null | undefined, isDemo: bo
   }));
 }
 
+export async function deleteDocument(documentId: string, token: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/documents/${documentId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(error);
+  }
+}
+
 // Base WebSocket class with all the common functionality
 export class BaseWebSocket {
   protected ws: WebSocket | null = null;
