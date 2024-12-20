@@ -71,6 +71,28 @@ export async function deleteDocument(documentId: string, token: string): Promise
   }
 }
 
+export async function getUploadProgress(filename: string, token: string): Promise<{
+  filename: string;
+  total_chunks: number;
+  processed_chunks: number;
+  is_complete: boolean;
+}> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/documents/upload-progress/${encodeURIComponent(filename)}`,
+    {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error('Failed to get upload progress');
+  }
+
+  return response.json();
+}
+
 // Base WebSocket class with all the common functionality
 export class BaseWebSocket {
   protected ws: WebSocket | null = null;

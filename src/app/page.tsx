@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { uploadDocument, listDocuments, deleteDocument } from '@/lib/api';
+import { uploadDocument, listDocuments, deleteDocument, getUploadProgress } from '@/lib/api';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { Document } from '@/types';
 
@@ -14,6 +14,7 @@ export default function Home() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [chunks, setChunks] = useState({ total: 0, processed: 0 });
   const [isDemo, setIsDemo] = useState(!user); // Default to demo mode when not logged in
   const [documentToDelete, setDocumentToDelete] = useState<Document | null>(null);
   const [confirmEmail, setConfirmEmail] = useState('');
@@ -65,27 +66,33 @@ export default function Home() {
 
     setIsUploading(true);
     setUploadProgress(0);
+    setChunks({ total: 0, processed: 0 });
 
     try {
-      // Simulate upload progress
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => Math.min(prev + 10, 90));
-      }, 200);
+      // Start polling for progress
+      const progressInterval = setInterval(async () => {
+        try {
+          const progress = await getUploadProgress(file.name, token);
+          if (progress.total_chunks > 0) {
+            const percentage = Math.round((progress.processed_chunks / progress.total_chunks) * 100);
+            setUploadProgress(percentage);
+            setChunks({ total: progress.total_chunks, processed: progress.processed_chunks });
+          }
+          
+          if (progress.is_complete) {
+            clearInterval(progressInterval);
+            // Refresh the documents list
+            const docs = await listDocuments(token);
+            setUserDocuments(docs);
+            setIsUploading(false);
+          }
+        } catch (error) {
+          console.error('Error checking progress:', error);
+        }
+      }, 1000);
 
+      // Start the upload
       await uploadDocument(file, token);
-      
-      clearInterval(progressInterval);
-      setUploadProgress(100);
-
-      // Refresh the documents list
-      const docs = await listDocuments(token);
-      setUserDocuments(docs);
-
-      // Reset after successful upload
-      setTimeout(() => {
-        setIsUploading(false);
-        setUploadProgress(0);
-      }, 500);
 
     } catch (error) {
       console.error('Upload failed:', error);
@@ -340,6 +347,79 @@ export default function Home() {
           </div>
         </div>
       </section>
+      {/* Upload progress UI */}
+      {isUploading && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-earth-900 p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4 border border-earth-200 dark:border-earth-700">
+            <div className="flex flex-col items-center">
+              {/* Loading spinner */}
+              <div className="w-12 h-12 mb-6">
+                <svg
+                  className="animate-spin w-full h-full text-blue-600"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+              </div>
+
+              <h3 className="text-xl font-semibold mb-2 text-earth-900 dark:text-earth-50">
+                Processing Document
+              </h3>
+              
+              <p className="text-earth-600 dark:text-earth-300 mb-6 text-center">
+                Please wait while we process your document. This may take a few minutes.
+              </p>
+
+              {/* Progress bar */}
+              <div className="w-full bg-earth-100 dark:bg-earth-800 rounded-full h-3 mb-4">
+                <div 
+                  className="bg-blue-600 h-3 rounded-full transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+
+              {/* Progress text */}
+              <div className="flex flex-col items-center space-y-1">
+                <p className="text-sm font-medium text-earth-700 dark:text-earth-200">
+                  {uploadProgress > 0 ? (
+                    <>
+                      Processed{' '}
+                      <span className="font-semibold text-blue-600">
+                        {Math.floor((uploadProgress / 100) * chunks.total)} chunks
+                      </span>{' '}
+                      out of{' '}
+                      <span className="font-semibold text-blue-600">
+                        {chunks.total}
+                      </span>
+                    </>
+                  ) : (
+                    'Initializing...'
+                  )}
+                </p>
+                {uploadProgress > 0 && (
+                  <p className="text-xs text-earth-500 dark:text-earth-400">
+                    {uploadProgress}% complete
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Delete Confirmation Modal */}
       {documentToDelete && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
