@@ -48,7 +48,7 @@ export function DocumentContent({
       },
       position: {
         x: rect.right + 10,
-        y: rect.top + window.scrollY
+        y: rect.top
       }
     });
   }, []);
