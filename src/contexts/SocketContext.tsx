@@ -27,23 +27,30 @@ interface SocketProviderProps {
 export function SocketProvider({ children, documentId }: SocketProviderProps) {
   const { token } = useAuth();
   
-  // Initialize sockets with auth token
-  const [conversationSocket] = useState(() => new ConversationWebSocket(documentId, token));
-  const [documentSocket] = useState(() => new DocumentWebSocket(documentId, token));
+  const [conversationSocket, setConversationSocket] = useState<ConversationWebSocket | null>(null);
+  const [documentSocket, setDocumentSocket] = useState<DocumentWebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    // Mark as connected once the sockets are created
-    setIsConnected(true);
+    if (token) {
+      const newConversationSocket = new ConversationWebSocket(documentId, token);
+      const newDocumentSocket = new DocumentWebSocket(documentId, token);
+      setConversationSocket(newConversationSocket);
+      setDocumentSocket(newDocumentSocket);
+      setIsConnected(true);
 
-    // Cleanup on unmount
-    return () => {
-      conversationSocket.close();
-      documentSocket.close();
-    };
-  }, [conversationSocket, documentSocket]);
+      return () => {
+        newConversationSocket.close();
+        newDocumentSocket.close();
+        setIsConnected(false);
+      };
+    } else {
+      setConversationSocket(null);
+      setDocumentSocket(null);
+      setIsConnected(false);
+    }
+  }, [token, documentId]);
 
-  // Provide the same stable context value
   const contextValue: SocketContextType = {
     conversationSocket,
     documentSocket,
