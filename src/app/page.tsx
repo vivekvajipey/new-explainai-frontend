@@ -15,6 +15,7 @@ export default function Home() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [chunks, setChunks] = useState({ total: 0, processed: 0 });
+  const [uploadSuccess, setUploadSuccess] = useState(false);
   const [isDemo, setIsDemo] = useState(!user); // Default to demo mode when not logged in
   const [documentToDelete, setDocumentToDelete] = useState<Document | null>(null);
   const [confirmEmail, setConfirmEmail] = useState('');
@@ -67,6 +68,7 @@ export default function Home() {
     setIsUploading(true);
     setUploadProgress(0);
     setChunks({ total: 0, processed: 0 });
+    setUploadSuccess(false);
 
     try {
       // Start polling for progress
@@ -81,10 +83,27 @@ export default function Home() {
           
           if (progress.is_complete) {
             clearInterval(progressInterval);
-            // Refresh the documents list
-            const docs = await listDocuments(token);
-            setUserDocuments(docs);
-            setIsUploading(false);
+            // Set progress to 100% first
+            setUploadProgress(100);
+            setChunks(prev => ({ ...prev, processed: prev.total }));
+            
+            // Small delay before showing success
+            setTimeout(async () => {
+              // Refresh the documents list
+              const docs = await listDocuments(token);
+              setUserDocuments(docs);
+              
+              // Set success state and auto-select the new document
+              setUploadSuccess(true);
+              const newDoc = docs.find(d => d.title === file.name.replace('.pdf', ''));
+              if (newDoc) {
+                setSelectedText(newDoc);
+                // Wait a moment to show success before redirecting
+                setTimeout(() => {
+                  router.push(`/documents/${newDoc.id}`);
+                }, 1500);
+              }
+            }, 500); // Wait for progress bar animation to complete
           }
         } catch (error) {
           console.error('Error checking progress:', error);
@@ -352,42 +371,63 @@ export default function Home() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white dark:bg-earth-900 p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4 border border-earth-200 dark:border-earth-700">
             <div className="flex flex-col items-center">
-              {/* Loading spinner */}
+              {/* Loading spinner or success icon */}
               <div className="w-12 h-12 mb-6">
-                <svg
-                  className="animate-spin w-full h-full text-blue-600"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
+                {uploadSuccess ? (
+                  <svg
+                    className="w-full h-full text-green-500"
+                    fill="none"
                     stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="animate-spin w-full h-full text-blue-600"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                )}
               </div>
 
               <h3 className="text-xl font-semibold mb-2 text-earth-900 dark:text-earth-50">
-                Processing Document
+                {uploadSuccess ? 'Upload Complete!' : 'Processing Document'}
               </h3>
               
               <p className="text-earth-600 dark:text-earth-300 mb-6 text-center">
-                Please wait while we process your document. This may take a few minutes.
+                {uploadSuccess 
+                  ? 'Your document has been processed successfully. Redirecting to document view...'
+                  : 'Please wait while we process your document. This may take a few minutes.'}
               </p>
 
               {/* Progress bar */}
               <div className="w-full bg-earth-100 dark:bg-earth-800 rounded-full h-3 mb-4">
                 <div 
-                  className="bg-blue-600 h-3 rounded-full transition-all duration-300"
+                  className={`h-3 rounded-full transition-all duration-300 ${
+                    uploadSuccess ? 'bg-green-500' : 'bg-blue-600'
+                  }`}
                   style={{ width: `${uploadProgress}%` }}
                 />
               </div>
@@ -395,7 +435,9 @@ export default function Home() {
               {/* Progress text */}
               <div className="flex flex-col items-center space-y-1">
                 <p className="text-sm font-medium text-earth-700 dark:text-earth-200">
-                  {uploadProgress > 0 ? (
+                  {uploadSuccess ? (
+                    'All chunks processed successfully!'
+                  ) : uploadProgress > 0 ? (
                     <>
                       Processed{' '}
                       <span className="font-semibold text-blue-600">
@@ -410,7 +452,7 @@ export default function Home() {
                     'Initializing...'
                   )}
                 </p>
-                {uploadProgress > 0 && (
+                {uploadProgress > 0 && !uploadSuccess && (
                   <p className="text-xs text-earth-500 dark:text-earth-400">
                     {uploadProgress}% complete
                   </p>
