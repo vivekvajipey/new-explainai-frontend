@@ -62,7 +62,7 @@ export function DocumentContent({
         elements.push(
           <span
             key={`text-${lastIndex}`}
-            className="text-[var(--primary-900)] dark:text-[var(--primary-100)]"
+            className="text-doc-text"
             data-index={lastIndex}
           >
             {content.slice(lastIndex, highlight.startOffset)}
@@ -73,16 +73,15 @@ export function DocumentContent({
       elements.push(
         <span
           key={highlight.id}
-          className="bg-yellow-100/40 dark:bg-yellow-500/40 text-[var(--primary-900)] 
-                   dark:text-[var(--primary-100)] group cursor-pointer hover:bg-yellow-200/40 
-                   dark:hover:bg-yellow-600/40 transition-colors"
+          className="bg-doc-highlight-bg border border-doc-highlight-border text-doc-highlight-text 
+                   group cursor-pointer transition-colors"
           onClick={() => onHighlightClick(highlight.conversationId)}
           data-index={highlight.startOffset}
         >
           {content.slice(highlight.startOffset, highlight.endOffset)}
           <span className="invisible group-hover:visible absolute -top-6 left-1/2 
-                         -translate-x-1/2 bg-[var(--primary-800)] text-[var(--primary-50)] px-2 py-1 
-                         rounded text-sm whitespace-nowrap">
+                         -translate-x-1/2 bg-tooltip-bg text-tooltip-text border border-tooltip-border
+                         px-2 py-1 rounded text-sm whitespace-nowrap shadow-sm">
             Click to open chat
           </span>
         </span>
@@ -95,7 +94,7 @@ export function DocumentContent({
       elements.push(
         <span
           key="text-end"
-          className="text-[var(--primary-900)] dark:text-[var(--primary-100)]"
+          className="text-doc-text"
           data-index={lastIndex}
         >
           {content.slice(lastIndex)}
@@ -107,12 +106,12 @@ export function DocumentContent({
   }, [content, highlights, onHighlightClick]);
 
   return (
-    <div className="bg-[var(--primary-300)] dark:bg-[var(--primary-800)] rounded-lg shadow-sm p-6 relative">
+    <div className="h-full">
       <div 
-        className="prose dark:prose-invert max-w-none prose-pre:bg-[var(--primary-50)] dark:prose-pre:bg-[var(--primary-900)]"
+        className="prose max-w-none p-6"
         onMouseUp={handleTextSelection}
       >
-        <pre className="whitespace-pre-wrap font-palatino">
+        <pre className="whitespace-pre-wrap font-palatino text-doc-text bg-transparent m-0 p-0">
           {renderedContent}
         </pre>
       </div>

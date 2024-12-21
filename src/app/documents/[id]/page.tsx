@@ -57,7 +57,7 @@ function DocumentPageContent({ id }: { id: string }) {
   if (!metadata || !isConnected) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-pulse text-primary-600">
+        <div className="animate-pulse text-doc-subtitle">
           {!isConnected ? 'Connecting...' : 'Loading document...'}
         </div>
       </div>
@@ -89,19 +89,19 @@ function DocumentPageContent({ id }: { id: string }) {
   return (
     <div className="max-w-6xl mx-auto p-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">{metadata.title}</h1>
+        <h1 className="text-3xl font-bold mb-2 text-doc-title">{metadata.title}</h1>
         <div className="flex items-center justify-between">
-          <p className="text-primary-600 dark:text-primary-300">
+          <p className="text-doc-subtitle">
             {metadata.pages} pages • Chunk {currentChunkIndex + 1} of {metadata.chunks.length}
           </p>
           <div className="flex items-center space-x-2">
             <button
               onClick={handlePreviousChunk}
               disabled={currentChunkIndex === 0}
-              className={`p-2 rounded-lg ${
+              className={`p-2 rounded-lg transition-colors ${
                 currentChunkIndex === 0
-                  ? 'text-primary-700 cursor-not-allowed'
-                  : 'text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-800'
+                  ? 'text-doc-nav-button-disabled cursor-not-allowed'
+                  : 'text-doc-nav-button hover:bg-doc-nav-button-hover'
               }`}
             >
               <ChevronLeft className="w-5 h-5" />
@@ -109,10 +109,10 @@ function DocumentPageContent({ id }: { id: string }) {
             <button
               onClick={handleNextChunk}
               disabled={currentChunkIndex === metadata.chunks.length - 1}
-              className={`p-2 rounded-lg ${
+              className={`p-2 rounded-lg transition-colors ${
                 currentChunkIndex === metadata.chunks.length - 1
-                  ? 'text-primary-700 cursor-not-allowed'
-                  : 'text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-800'
+                  ? 'text-doc-nav-button-disabled cursor-not-allowed'
+                  : 'text-doc-nav-button hover:bg-doc-nav-button-hover'
               }`}
             >
               <ChevronRight className="w-5 h-5" />
@@ -120,19 +120,21 @@ function DocumentPageContent({ id }: { id: string }) {
           </div>
         </div>
       </div>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Document Content */}
-        <DocumentContent
-          content={currentChunk.content}
-          chunkId={currentChunkIndex.toString()}
-          onHighlightClick={handleHighlightClick}
-          onCreateHighlight={handleCreateHighlight}
-        />
+        <div className="document-container">
+          <DocumentContent
+            content={currentChunk.content}
+            chunkId={currentChunkIndex.toString()}
+            onHighlightClick={handleHighlightClick}
+            onCreateHighlight={handleCreateHighlight}
+          />
+        </div>
 
         {/* Conversations */}
         {isConnected && (
-          <div className="h-[600px]">
+          <div className="h-[600px] document-container">
             <ConversationTabs 
               ref={conversationTabsRef}
               documentId={id}
@@ -141,7 +143,7 @@ function DocumentPageContent({ id }: { id: string }) {
           </div>
         )}
         {!isConnected && (
-          <div className="text-primary-500 text-center">
+          <div className="text-doc-subtitle text-center">
             Connecting...
           </div>
         )}

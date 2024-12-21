@@ -10,56 +10,90 @@ export default {
   theme: {
   	extend: {
   		colors: {
-  			primary: {
-  				'50': 'var(--primary-50)',
-  				'100': 'var(--primary-100)',
-  				'200': 'var(--primary-200)',
-  				'300': 'var(--primary-300)',
-  				'400': 'var(--primary-400)',
-  				'500': 'var(--primary-500)',
-  				'600': 'var(--primary-600)',
-  				'700': 'var(--primary-700)',
-  				'800': 'var(--primary-800)',
-  				'900': 'var(--primary-900)',
-  				DEFAULT: 'hsl(var(--primary))',
-  				foreground: 'hsl(var(--primary-foreground))'
+  			// Base UI colors
+  			background: 'var(--color-background)',
+  			foreground: 'var(--color-foreground)',
+			border: 'var(--color-border)',
+  			
+  			// Navigation
+  			nav: {
+  				bg: 'var(--color-nav-bg)',
+  				text: 'var(--color-nav-text)',
+  				hover: 'var(--color-nav-hover)',
   			},
-  			background: 'hsl(var(--background))',
-  			foreground: 'hsl(var(--foreground))',
+  			
+  			// Sidebar
+  			sidebar: {
+  				bg: 'var(--color-sidebar-bg)',
+  				text: 'var(--color-sidebar-text)',
+  				hover: 'var(--color-sidebar-hover)',
+  			},
+  			
+  			// Cards
   			card: {
-  				DEFAULT: 'hsl(var(--card))',
-  				foreground: 'hsl(var(--card-foreground))'
+  				bg: 'var(--color-card-bg)',
+  				border: 'var(--color-card-border)',
+  				hover: 'var(--color-card-hover)',
   			},
-  			popover: {
-  				DEFAULT: 'hsl(var(--popover))',
-  				foreground: 'hsl(var(--popover-foreground))'
+  			
+  			// Buttons
+  			button: {
+  				primary: {
+  					bg: 'var(--color-button-primary-bg)',
+  					text: 'var(--color-button-primary-text)',
+  					hover: 'var(--color-button-primary-hover)',
+  				},
+  				secondary: {
+  					bg: 'var(--color-button-secondary-bg)',
+  					text: 'var(--color-button-secondary-text)',
+  					hover: 'var(--color-button-secondary-hover)',
+  				},
   			},
-  			secondary: {
-  				DEFAULT: 'hsl(var(--secondary))',
-  				foreground: 'hsl(var(--secondary-foreground))'
+  			
+  			// Form inputs
+  			input: {
+  				bg: 'var(--color-input-bg)',
+  				text: 'var(--color-input-text)',
+  				border: 'var(--color-input-border)',
+  				focus: 'var(--color-input-focus)',
   			},
-  			muted: {
-  				DEFAULT: 'hsl(var(--muted))',
-  				foreground: 'hsl(var(--muted-foreground))'
+  			
+  			// Messages
+  			message: {
+  				user: {
+  					bg: 'var(--color-message-user-bg)',
+  					text: 'var(--color-message-user-text)',
+  				},
+  				ai: {
+  					bg: 'var(--color-message-ai-bg)',
+  					text: 'var(--color-message-ai-text)',
+  				},
   			},
-  			accent: {
-  				DEFAULT: 'hsl(var(--accent))',
-  				foreground: 'hsl(var(--accent-foreground))'
+  			
+  			// Tooltips
+  			tooltip: {
+  				bg: 'var(--color-tooltip-bg)',
+  				text: 'var(--color-tooltip-text)',
+  				border: 'var(--color-tooltip-border)',
   			},
-  			destructive: {
-  				DEFAULT: 'hsl(var(--destructive))',
-  				foreground: 'hsl(var(--destructive-foreground))'
-  			},
-  			border: 'hsl(var(--border))',
-  			input: 'hsl(var(--input))',
-  			ring: 'hsl(var(--ring))',
-  			chart: {
-  				'1': 'hsl(var(--chart-1))',
-  				'2': 'hsl(var(--chart-2))',
-  				'3': 'hsl(var(--chart-3))',
-  				'4': 'hsl(var(--chart-4))',
-  				'5': 'hsl(var(--chart-5))'
-  			}
+  			
+  			// Status colors
+  			accent: 'var(--color-accent)',
+  			success: 'var(--color-success)',
+  			error: 'var(--color-error)',
+  			
+  			// Document colors (flattened)
+            'doc-bg': 'var(--color-doc-content-bg)',
+            'doc-text': 'var(--color-doc-content-text)',
+            'doc-border': 'var(--color-doc-content-border)',
+            'doc-highlight-bg': 'var(--color-doc-highlight-bg)',
+            'doc-highlight-border': 'var(--color-doc-highlight-border)',
+            'doc-highlight-text': 'var(--color-doc-content-text)',
+            'tab-active-bg': 'var(--color-tab-active-bg)',
+            'tab-active-text': 'var(--color-tab-active-text)',
+            'tab-inactive-bg': 'var(--color-tab-inactive-bg)',
+            'tab-inactive-text': 'var(--color-tab-inactive-text)',
+            'tab-hover-bg': 'var(--color-tab-hover-bg)',
   		},
   		fontFamily: {
   			palatino: [
@@ -68,7 +102,7 @@ export default {
   			]
   		},
   		borderRadius: {
-  			lg: 'var(--radius)',
+  			lg: 'var(--border-radius-lg)',
   			md: 'calc(var(--radius) - 2px)',
   			sm: 'calc(var(--radius) - 4px)'
   		}

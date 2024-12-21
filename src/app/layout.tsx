@@ -13,29 +13,27 @@ import { useSocket } from "@/contexts/SocketContext";
 import { useConversationStore } from "@/stores/conversationStores";
 import Link from 'next/link';
 
-import { useTheme } from "next-themes";
-import { Sun, Moon } from "lucide-react";
+// import { useTheme } from "next-themes";
+// import { Sun, Moon } from "lucide-react";
 
-function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+// function ThemeToggle() {
+//   const { theme, setTheme } = useTheme();
 
-  return (
-    <button
-      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      className="p-2 rounded-lg bg-[var(--primary-100)] dark:bg-[var(--primary-800)] 
-                text-[var(--primary-600)] dark:text-[var(--primary-400)]
-                hover:bg-[var(--primary-200)] dark:hover:bg-[var(--primary-700)]
-                transition-colors"
-      aria-label="Toggle theme"
-    >
-      {theme === "dark" ? (
-        <Sun className="w-5 h-5" />
-      ) : (
-        <Moon className="w-5 h-5" />
-      )}
-    </button>
-  );
-}
+//   return (
+//     <button
+//       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+//       className="p-2 rounded-lg bg-button-secondary-bg text-button-secondary-text 
+//                 hover:bg-button-secondary-hover transition-colors"
+//       aria-label="Toggle theme"
+//     >
+//       {theme === "dark" ? (
+//         <Sun className="w-5 h-5" />
+//       ) : (
+//         <Moon className="w-5 h-5" />
+//       )}
+//     </button>
+//   );
+// }
 
 function AuthInitializer() {
   const { login } = useAuth();
@@ -73,20 +71,20 @@ function Header() {
   };
 
   return (
-    <header className="border-b border-[var(--primary-200)] dark:border-[var(--primary-800)] bg-[var(--primary-50)]/50 dark:bg-[var(--primary-900)]/50 backdrop-blur-sm">
+    <header className="border-b border-header-border bg-header-bg/50 backdrop-blur-sm">
       <nav className="container mx-auto px-4 py-4 flex justify-between items-center">
         <Link href="/" className="hover:opacity-80 transition-opacity">
-          <h1 className="text-2xl font-bold text-[var(--primary-900)] dark:text-[var(--primary-50)]">
+          <h1 className="text-2xl font-bold text-header-text">
             ExplainAI
           </h1>
         </Link>
         <div className="flex items-center gap-3">
-          <ThemeToggle />
+          {/* <ThemeToggle /> */}
           {user && (
             <>
-              <div className="flex items-center gap-2 px-3 py-2 bg-[var(--primary-100)] dark:bg-[var(--primary-800)] rounded-lg">
+              <div className="flex items-center gap-2 px-3 py-2 bg-header-user-bg rounded-lg">
                 <svg 
-                  className="w-4 h-4 text-[var(--primary-600)] dark:text-[var(--primary-400)]" 
+                  className="w-4 h-4 text-header-user-icon" 
                   fill="none" 
                   stroke="currentColor" 
                   viewBox="0 0 24 24"
@@ -98,13 +96,15 @@ function Header() {
                     d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" 
                   />
                 </svg>
-                <span className="text-sm font-medium text-[var(--primary-700)] dark:text-[var(--primary-300)]">
+                <span className="text-sm font-medium text-header-user-text">
                   {user.email}
                 </span>
               </div>
               <button
                 onClick={handleSignOut}
-                className="px-4 py-2 text-sm font-medium text-[var(--primary-600)] dark:text-[var(--primary-400)] hover:text-[var(--primary-900)] dark:hover:text-[var(--primary-50)] hover:bg-[var(--primary-100)] dark:hover:bg-[var(--primary-800)] rounded-lg transition-all inline-flex items-center gap-2"
+                className="px-4 py-2 text-sm font-medium text-header-text 
+                         hover:text-header-text-hover hover:bg-header-button-hover 
+                         rounded-lg transition-all inline-flex items-center gap-2"
               >
                 <span>Sign Out</span>
                 <svg 
@@ -139,10 +139,10 @@ export default function RootLayout({
       <head>
         <Script src="https://accounts.google.com/gsi/client" async defer />
       </head>
-      <body className="font-palatino antialiased bg-[var(--primary-50)] text-[var(--primary-900)] dark:bg-[var(--primary-900)] dark:text-[var(--primary-50)]">
+      <body className="font-palatino antialiased bg-background text-foreground">
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="light"
           enableSystem
           disableTransitionOnChange
         >

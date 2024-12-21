@@ -160,7 +160,8 @@ export default function Home() {
         {!user && (
           <a
             href="/login.html"
-            className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors shadow-sm"
+            className="px-6 py-3 bg-button-primary-bg text-button-primary-text rounded-lg 
+                     hover:bg-button-primary-hover transition-all shadow-sm"
           >
             Sign In
           </a>
@@ -169,22 +170,24 @@ export default function Home() {
 
       {/* Hero Section */}
       <section className="text-center pt-16 pb-8">
-        <h1 className="text-5xl font-bold text-primary-900 dark:text-primary-50 mb-6">
+        <h1 className="text-5xl font-bold text-foreground mb-6">
           Understand Any Document with AI
         </h1>
-        <p className="text-xl text-primary-600 dark:text-primary-400 mb-8 max-w-2xl mx-auto">
+        <p className="text-xl text-sand-600 dark:text-sand-300 mb-8 max-w-2xl mx-auto">
           Upload any document and start a conversation. Our AI will help you understand, analyze, and extract insights from your text.
         </p>
       </section>
 
       {/* Main Content */}
       <section className="px-4">
-        <div className="bg-[var(--primary-200)] dark:bg-[var(--primary-800)] backdrop-blur-lg rounded-3xl p-12 max-w-3xl mx-auto shadow-2xl shadow-[var(--primary-900)]/5 dark:shadow-[var(--primary-900)]/20 border border-[var(--primary-200)]/50 dark:border-[var(--primary-700)]/50">
+        <div className="bg-card-bg backdrop-blur-lg rounded-3xl p-12 max-w-3xl mx-auto 
+                      shadow-2xl shadow-sand-900/5 dark:shadow-sand-900/20 
+                      border border-card-border">
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-[var(--primary-900)] dark:text-[var(--primary-50)] mb-4">
+            <h2 className="text-3xl font-bold text-foreground mb-4">
               {isDemo ? "Try Our Example Documents" : user ? "Your Documents" : "Try Our Example Documents"}
             </h2>
-            <p className="text-[var(--primary-600)] dark:text-[var(--primary-400)]">
+            <p className="text-sand-600 dark:text-sand-400">
               {isDemo ? "Select an example document to analyze" : user ? "Select or upload a document to analyze" : "Select an example document to analyze"}
             </p>
           </div>
@@ -197,12 +200,12 @@ export default function Home() {
                 <div className="relative w-full max-w-2xl mx-auto">
                   <button
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className={`w-full px-5 py-3.5 rounded-xl bg-[var(--primary-50)] dark:bg-[var(--primary-900)] text-left shadow-sm
-                      border border-[var(--primary-200)] dark:border-[var(--primary-700)] hover:border-[var(--primary-300)] dark:hover:border-[var(--primary-600)]
-                      focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--primary-500)] dark:focus:ring-[var(--primary-400)]
+                    className={`w-full px-5 py-3.5 rounded-xl bg-input-bg text-left shadow-sm
+                      border border-input-border hover:border-input-focus
+                      focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-input-focus
                       transition-all duration-200 backdrop-blur-sm
                       flex items-center justify-between
-                      ${selectedText ? 'text-[var(--primary-900)] dark:text-[var(--primary-50)]' : 'text-[var(--primary-500)] dark:text-[var(--primary-400)]'}`}
+                      ${selectedText ? 'text-input-text' : 'text-sand-500 dark:text-sand-400'}`}
                   >
                     <span className="block truncate">
                       {selectedText ? selectedText.title : isDemo ? 'Select an example document' : 'Select a document'}
@@ -225,28 +228,27 @@ export default function Home() {
 
                   {/* Dropdown menu */}
                   {isDropdownOpen && (
-                    <div className="absolute z-10 mt-1 w-full bg-[var(--primary-50)] dark:bg-[var(--primary-900)] shadow-lg rounded-xl border border-[var(--primary-200)] dark:border-[var(--primary-700)] max-h-96 overflow-y-auto">
+                    <div className="absolute z-10 mt-1 w-full bg-card-bg shadow-lg rounded-xl 
+                                  border border-card-border max-h-96 overflow-y-auto">
                       <div className="py-2">
                         {userDocuments.length > 0 ? (
                           <div>
-                            <div className="px-4 py-2 text-sm font-medium text-[var(--primary-500)] dark:text-[var(--primary-400)]">
+                            <div className="px-4 py-2 text-sm font-medium text-sand-500 dark:text-sand-400">
                               {isDemo ? 'Example Documents' : 'Your Documents'}
                             </div>
                             {userDocuments.map((doc) => (
                               <div
                                 key={doc.id}
-                                className="flex items-center justify-between px-4 py-2 hover:bg-[var(--primary-50)] dark:hover:bg-[var(--primary-800)]"
+                                className="flex items-center justify-between px-4 py-2 hover:bg-card-hover"
                               >
                                 <button
                                   onClick={() => {
                                     setSelectedText(doc);
                                     setIsDropdownOpen(false);
                                   }}
-                                  className={`flex-grow text-left ${
-                                    selectedText?.id === doc.id ? 'bg-[var(--primary-100)] dark:bg-[var(--primary-700)]' : ''
-                                  }`}
+                                  className="flex-grow text-left"
                                 >
-                                  <span className="block text-[var(--primary-900)] dark:text-[var(--primary-50)] font-medium">
+                                  <span className="block text-foreground font-medium">
                                     {doc.title}
                                   </span>
                                 </button>
@@ -256,9 +258,9 @@ export default function Home() {
                                       e.stopPropagation();
                                       setDocumentToDelete(doc);
                                     }}
-                                    className="ml-2 px-3 py-1 text-sm text-red-600 hover:text-red-700 
-                                             dark:text-red-400 dark:hover:text-red-300 
-                                             hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg
+                                    className="ml-2 px-3 py-1 text-sm text-error hover:text-rose-700 
+                                             dark:text-rose-400 dark:hover:text-rose-300 
+                                             hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg
                                              transition-colors"
                                   >
                                     Delete
@@ -270,18 +272,21 @@ export default function Home() {
                             {/* Add Upload Document option for non-logged-in users */}
                             {!user && (
                               <>
-                                <div className="px-4 py-2 text-sm font-medium text-[var(--primary-500)] dark:text-[var(--primary-400)] border-t border-[var(--primary-200)] dark:border-[var(--primary-700)] mt-2">
+                                <div className="px-4 py-2 text-sm font-medium text-sand-500 dark:text-sand-400 
+                                              border-t border-card-border mt-2">
                                   Upload Your Own
                                 </div>
                                 <a
                                   href="/login.html"
-                                  className="w-full text-left px-4 py-3 flex items-center gap-2 text-[var(--primary-400)] dark:text-[var(--primary-500)] hover:bg-[var(--primary-50)] dark:hover:bg-[var(--primary-800)] cursor-pointer group"
+                                  className="w-full text-left px-4 py-3 flex items-center gap-2 
+                                           text-sand-500 dark:text-sand-400 hover:bg-card-hover 
+                                           cursor-pointer group"
                                 >
                                   <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                                   </svg>
                                   <div>
-                                    <span className="block font-medium group-hover:text-[var(--primary-600)] dark:group-hover:text-[var(--primary-300)]">
+                                    <span className="block font-medium group-hover:text-sand-700 dark:group-hover:text-sand-300">
                                       Upload Document
                                     </span>
                                     <span className="block text-sm">
@@ -293,7 +298,7 @@ export default function Home() {
                             )}
                           </div>
                         ) : (
-                          <div className="px-4 py-3 text-sm text-[var(--primary-500)] dark:text-[var(--primary-400)]">
+                          <div className="px-4 py-3 text-sm text-sand-500 dark:text-sand-400">
                             {isDemo ? 'Loading example documents...' : 'No documents found'}
                           </div>
                         )}
@@ -314,11 +319,12 @@ export default function Home() {
                     />
                     <label
                       htmlFor="file-upload"
-                      className={`flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white 
-                        bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 
-                        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 
-                        cursor-pointer transition-all duration-200 w-full shadow-sm
-                        ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      className="flex items-center justify-center px-6 py-3 border border-transparent 
+                               text-base font-medium rounded-md text-button-primary-text 
+                               bg-button-primary-bg hover:bg-button-primary-hover
+                               focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-input-focus 
+                               cursor-pointer transition-all duration-200 w-full shadow-sm
+                               disabled:opacity-50"
                     >
                       {isUploading ? (
                         <div className="w-full">
@@ -329,7 +335,7 @@ export default function Home() {
                             </svg>
                             Uploading...
                           </div>
-                          <div className="w-full bg-primary-500/30 rounded-full h-1.5">
+                          <div className="w-full bg-sage-500/30 rounded-full h-1.5">
                             <div 
                               className="bg-white h-1.5 rounded-full transition-all duration-300"
                               style={{ width: `${uploadProgress}%` }}
@@ -352,8 +358,8 @@ export default function Home() {
                 {selectedText && (
                   <button
                     onClick={handleTryItOut}
-                    className="mt-6 w-full px-6 py-4 bg-primary-600 hover:bg-primary-700 text-primary-50 font-medium rounded-xl 
-                      transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 text-lg"
+                    className="mt-6 w-full px-6 py-4 bg-accent hover:bg-sky-600 text-white font-medium rounded-xl 
+                             transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 text-lg"
                   >
                     <span>Analyze this document</span>
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -366,16 +372,17 @@ export default function Home() {
           </div>
         </div>
       </section>
+
       {/* Upload progress UI */}
       {isUploading && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-primary-900 p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4 border border-primary-200 dark:border-primary-700">
+        <div className="fixed inset-0 bg-sand-900/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-card-bg p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4 border border-card-border">
             <div className="flex flex-col items-center">
               {/* Loading spinner or success icon */}
               <div className="w-12 h-12 mb-6">
                 {uploadSuccess ? (
                   <svg
-                    className="w-full h-full text-green-500"
+                    className="w-full h-full text-success"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -390,7 +397,7 @@ export default function Home() {
                   </svg>
                 ) : (
                   <svg
-                    className="animate-spin w-full h-full text-blue-600"
+                    className="animate-spin w-full h-full text-accent"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -412,21 +419,21 @@ export default function Home() {
                 )}
               </div>
 
-              <h3 className="text-xl font-semibold mb-2 text-primary-900 dark:text-primary-50">
+              <h3 className="text-xl font-semibold mb-2 text-foreground">
                 {uploadSuccess ? 'Upload Complete!' : 'Processing Document'}
               </h3>
               
-              <p className="text-primary-600 dark:text-primary-300 mb-6 text-center">
+              <p className="text-sand-600 dark:text-sand-300 mb-6 text-center">
                 {uploadSuccess 
                   ? 'Your document has been processed successfully. Redirecting to document view...'
                   : 'Please wait while we process your document. This may take a few minutes.'}
               </p>
 
               {/* Progress bar */}
-              <div className="w-full bg-primary-100 dark:bg-primary-800 rounded-full h-3 mb-4">
+              <div className="w-full bg-sand-100 dark:bg-sand-800 rounded-full h-3 mb-4">
                 <div 
                   className={`h-3 rounded-full transition-all duration-300 ${
-                    uploadSuccess ? 'bg-green-500' : 'bg-blue-600'
+                    uploadSuccess ? 'bg-success' : 'bg-accent'
                   }`}
                   style={{ width: `${uploadProgress}%` }}
                 />
@@ -434,17 +441,17 @@ export default function Home() {
 
               {/* Progress text */}
               <div className="flex flex-col items-center space-y-1">
-                <p className="text-sm font-medium text-primary-700 dark:text-primary-200">
+                <p className="text-sm font-medium text-sand-700 dark:text-sand-200">
                   {uploadSuccess ? (
                     'All chunks processed successfully!'
                   ) : uploadProgress > 0 ? (
                     <>
                       Processed{' '}
-                      <span className="font-semibold text-blue-600">
+                      <span className="font-semibold text-accent">
                         {Math.floor((uploadProgress / 100) * chunks.total)} chunks
                       </span>{' '}
                       out of{' '}
-                      <span className="font-semibold text-blue-600">
+                      <span className="font-semibold text-accent">
                         {chunks.total}
                       </span>
                     </>
@@ -453,7 +460,7 @@ export default function Home() {
                   )}
                 </p>
                 {uploadProgress > 0 && !uploadSuccess && (
-                  <p className="text-xs text-primary-500 dark:text-primary-400">
+                  <p className="text-xs text-sand-500 dark:text-sand-400">
                     {uploadProgress}% complete
                   </p>
                 )}
@@ -462,14 +469,15 @@ export default function Home() {
           </div>
         </div>
       )}
+
       {/* Delete Confirmation Modal */}
       {documentToDelete && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-primary-800 rounded-xl p-6 max-w-md w-full">
-            <h3 className="text-xl font-bold text-primary-900 dark:text-primary-50 mb-4">
+        <div className="fixed inset-0 bg-sand-900/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-card-bg rounded-xl p-6 max-w-md w-full border border-card-border">
+            <h3 className="text-xl font-bold text-foreground mb-4">
               Delete Document
             </h3>
-            <p className="text-primary-600 dark:text-primary-400 mb-4">
+            <p className="text-sand-600 dark:text-sand-400 mb-4">
               This action cannot be undone. To confirm deletion of &ldquo;{documentToDelete.title}&rdquo;, 
               please type your email address: {user?.email}
             </p>
@@ -478,9 +486,9 @@ export default function Home() {
               value={confirmEmail}
               onChange={(e) => setConfirmEmail(e.target.value)}
               placeholder="Enter your email"
-              className="w-full px-4 py-2 rounded-lg border border-primary-200 dark:border-primary-700 
-                       bg-white dark:bg-primary-900 text-primary-900 dark:text-primary-50 mb-4
-                       focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-4 py-2 rounded-lg border border-input-border 
+                       bg-input-bg text-input-text mb-4
+                       focus:outline-none focus:ring-2 focus:ring-input-focus"
             />
             <div className="flex justify-end space-x-3">
               <button
@@ -488,8 +496,8 @@ export default function Home() {
                   setDocumentToDelete(null);
                   setConfirmEmail('');
                 }}
-                className="px-4 py-2 text-primary-600 hover:text-primary-700 
-                         dark:text-primary-400 dark:hover:text-primary-300"
+                className="px-4 py-2 text-sand-600 hover:text-sand-700 
+                         dark:text-sand-400 dark:hover:text-sand-300"
               >
                 Cancel
               </button>
@@ -498,8 +506,8 @@ export default function Home() {
                 disabled={confirmEmail !== user?.email || isDeleting}
                 className={`px-4 py-2 rounded-lg ${
                   confirmEmail === user?.email && !isDeleting
-                    ? 'bg-red-600 hover:bg-red-700 text-white'
-                    : 'bg-primary-300 text-primary-500 cursor-not-allowed'
+                    ? 'bg-error hover:bg-rose-700 text-white'
+                    : 'bg-sand-300 text-sand-500 cursor-not-allowed'
                 }`}
               >
                 {isDeleting ? 'Deleting...' : 'Delete Document'}

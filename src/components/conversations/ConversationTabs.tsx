@@ -260,15 +260,15 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
     }));
 
     return (
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full bg-doc-content-bg border border-doc-content-border rounded-lg shadow-sm">
         {/* Tabs */}
-        <div className="flex space-x-2 mb-4">
+        <div className="flex flex-wrap gap-2 p-4 pb-0">
           <button
             onClick={() => setActiveTab('main')}
-            className={`px-4 py-2 rounded-lg ${
+            className={`px-4 py-2 rounded-lg transition-colors ${
               activeTab === 'main'
-                ? 'bg-[var(--primary-100)] text-[var(--primary-600)]'
-                : 'bg-[var(--primary-600)] text-white hover:bg-[var(--primary-200)]'
+                ? 'bg-tab-active-bg text-tab-active-text font-medium shadow-sm'
+                : 'bg-tab-inactive-bg text-tab-inactive-text hover:bg-tab-hover-bg'
             }`}
           >
             Main
@@ -277,45 +277,54 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
             <button
               key={conv.id}
               onClick={() => setActiveTab(conv.id)}
-              className={`px-4 py-2 rounded-lg ${
+              className={`px-4 py-2 rounded-lg transition-colors max-w-[200px] truncate ${
                 activeTab === conv.id
-                  ? 'bg-[var(--primary-100)] text-[var(--primary-600)]'
-                  : 'bg-[var(--primary-600)] text-white hover:bg-[var(--primary-200)]'
+                  ? 'bg-tab-active-bg text-tab-active-text font-medium shadow-sm'
+                  : 'bg-tab-inactive-bg text-tab-inactive-text hover:bg-tab-hover-bg'
               }`}
+              title={conv.highlightText}
             >
               {conv.highlightText!.substring(0, 20)}...
             </button>
           ))}
         </div>
 
+        <div className="px-4">
+          <div className="border-b border-doc-content-border w-full"></div>
+        </div>
+
         {/* Error message */}
         {error && (
-          <div className="text-red-500 mb-4 text-center">
-            {error}
+          <div className="mx-4 mt-4">
+            <div className="text-error p-3 bg-error/10 rounded-lg text-center">
+              {error}
+            </div>
           </div>
         )}
 
         {/* Active conversation */}
-        {conversationSocket && mainConversationId ? (
-          activeTab === 'main' ? (
-            <MainConversation
-              documentId={documentId}
-              currentChunkId={currentSequence}
-              conversationId={mainConversationId}
-            />
+        <div className="flex-1 p-4 pt-4 overflow-hidden">
+          {conversationSocket && mainConversationId ? (
+            activeTab === 'main' ? (
+              <MainConversation
+                documentId={documentId}
+                currentChunkId={currentSequence}
+                conversationId={mainConversationId}
+              />
+            ) : (
+              <ChunkConversation
+                documentId={documentId}
+                chunkId={currentSequence}
+                conversationId={activeTab}
+                highlightText={chunkConversations.find(conv => conv.id === activeTab)?.highlightText || ''}
+              />
+            )
           ) : (
-            <ChunkConversation
-              documentId={documentId}
-              chunkId={currentSequence}
-              conversationId={activeTab}
-              highlightText={chunkConversations.find(conv => conv.id === activeTab)?.highlightText || ''}
-            />
-          )
-        ) : (
-          <div className="text-[var(--primary-500)] text-center">
-            Initializing conversations...
-          </div>
-        )}
+            <div className="text-doc-subtitle text-center p-4 bg-doc-content-bg/50 rounded-lg">
+              Initializing conversations...
+            </div>
+          )}
+        </div>
       </div>
     );
   }

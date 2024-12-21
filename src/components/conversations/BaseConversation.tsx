@@ -96,7 +96,7 @@ export default function BaseConversation({
   
 
   return (
-    <div className={`flex flex-col h-[500px] bg-[var(--primary-300)] dark:bg-[var(--primary-800)] rounded-lg shadow-sm ${className}`}>
+    <div className={`flex flex-col h-[500px] ${className}`}>
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message) => (
@@ -105,13 +105,13 @@ export default function BaseConversation({
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[80%] rounded-lg p-3 ${
+              className={`max-w-[80%] rounded-lg p-3 shadow-sm ${
                 message.role === 'user'
-                  ? 'bg-[var(--primary-100)] dark:bg-[var(--primary-700)]'
-                  : 'bg-[var(--primary-50)] dark:bg-[var(--primary-600)]'
+                  ? 'bg-message-user-bg text-message-user-text'
+                  : 'bg-message-ai-bg text-message-ai-text'
               }`}
             >
-              <p className="text-[var(--primary-900)] dark:text-[var(--primary-50)]">
+              <p className="whitespace-pre-wrap">
                 {message.id === streamingMessageId && isStreaming
                   ? streamingContent
                   : message.content}
@@ -120,7 +120,7 @@ export default function BaseConversation({
           </div>
         ))}
         {error && (
-          <div className="text-red-500 text-center p-2">
+          <div className="text-error p-3 bg-error/10 rounded-lg text-center">
             {error}
           </div>
         )}
@@ -128,7 +128,7 @@ export default function BaseConversation({
       </div>
 
       {/* Input Container */}
-      <div className="border-t border-[var(--primary-200)] dark:border-[var(--primary-700)] p-4">
+      <div className="border-t border-doc-content-border p-4 bg-doc-content-bg rounded-b-lg">
         <div className="flex space-x-2">
           <input
             type="text"
@@ -140,19 +140,20 @@ export default function BaseConversation({
                 ? 'Initializing conversation...' 
                 : placeholder
             }
-            className="flex-1 px-4 py-2 rounded-lg border border-[var(--primary-200)] dark:border-[var(--primary-600)] 
-                     bg-[var(--primary-50)] dark:bg-[var(--primary-700)] text-[var(--primary-900)] dark:text-[var(--primary-50)]
-                     focus:outline-none focus:ring-2 focus:ring-[var(--primary-500)]"
+            className="flex-1 px-4 py-2 rounded-lg 
+                     bg-input-bg text-input-text border border-input-border
+                     focus:outline-none focus:ring-2 focus:ring-input-focus
+                     disabled:opacity-50 transition-colors"
             disabled={isStreaming || !conversationId}
           />
           <button
             onClick={() => sendMessage(input)}
             disabled={isStreaming || !conversationId || !input.trim()}
-            className={`p-2 rounded-lg ${
+            className={`p-2 rounded-lg transition-colors ${
               isStreaming || !conversationId || !input.trim()
-                ? 'bg-[var(--primary-300)] cursor-not-allowed'
-                : 'bg-[var(--primary-600)] hover:bg-[var(--primary-700)]'
-            } text-white`}
+                ? 'bg-button-secondary-bg text-button-secondary-text cursor-not-allowed'
+                : 'bg-button-primary-bg text-button-primary-text hover:bg-button-primary-hover'
+            }`}
           >
             <Send className="w-5 h-5" />
           </button>
