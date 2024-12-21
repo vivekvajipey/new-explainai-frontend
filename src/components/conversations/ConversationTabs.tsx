@@ -267,8 +267,8 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
             onClick={() => setActiveTab('main')}
             className={`px-4 py-2 rounded-lg ${
               activeTab === 'main'
-                ? 'bg-earth-100 text-earth-600'
-                : 'bg-earth-600 text-white hover:bg-earth-200'
+                ? 'bg-primary-100 text-primary-600'
+                : 'bg-primary-600 text-white hover:bg-primary-200'
             }`}
           >
             Main
@@ -279,8 +279,8 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
               onClick={() => setActiveTab(conv.id)}
               className={`px-4 py-2 rounded-lg ${
                 activeTab === conv.id
-                  ? 'bg-earth-100 text-earth-600'
-                  : 'bg-earth-600 text-white hover:bg-earth-200'
+                  ? 'bg-primary-100 text-primary-600'
+                  : 'bg-primary-600 text-white hover:bg-primary-200'
               }`}
             >
               {conv.highlightText!.substring(0, 20)}...

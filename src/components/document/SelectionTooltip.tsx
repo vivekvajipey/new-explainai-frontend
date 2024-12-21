@@ -20,8 +20,8 @@ export const SelectionTooltip: React.FC<SelectionTooltipProps> = ({
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
-      className="fixed z-50 bg-white dark:bg-earth-900 rounded-lg shadow-lg 
-                 ring-1 ring-earth-200 dark:ring-earth-700"
+      className="fixed z-50 bg-white dark:bg-primary-900 rounded-lg shadow-lg 
+                 ring-1 ring-primary-200 dark:ring-primary-700"
       style={{ 
         left: position.x,
         top: position.y,
@@ -34,8 +34,8 @@ export const SelectionTooltip: React.FC<SelectionTooltipProps> = ({
           onChatClick();
         }}
         variant="ghost"
-        className="flex items-center space-x-2 px-3 py-2 text-earth-600 
-                   dark:text-earth-300 hover:bg-earth-100 dark:hover:bg-earth-800 
+        className="flex items-center space-x-2 px-3 py-2 text-primary-600 
+                   dark:text-primary-300 hover:bg-primary-100 dark:hover:bg-primary-800 
                    rounded-lg transition-colors text-sm whitespace-nowrap w-full"
       >
         <MessageCircle className="w-4 h-4" />

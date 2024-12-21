@@ -49,18 +49,18 @@ function Header() {
   };
 
   return (
-    <header className="border-b border-earth-200 dark:border-earth-800 bg-earth-50/50 dark:bg-earth-900/50 backdrop-blur-sm">
+    <header className="border-b border-primary-200 dark:border-primary-800 bg-primary-50/50 dark:bg-primary-900/50 backdrop-blur-sm">
       <nav className="container mx-auto px-4 py-4 flex justify-between items-center">
         <Link href="/" className="hover:opacity-80 transition-opacity">
-          <h1 className="text-2xl font-bold text-earth-900 dark:text-earth-50">
+          <h1 className="text-2xl font-bold text-primary-900 dark:text-primary-50">
             ExplainAI
           </h1>
         </Link>
         {user && (
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-2 bg-earth-100 dark:bg-earth-800 rounded-lg">
+            <div className="flex items-center gap-2 px-3 py-2 bg-primary-100 dark:bg-primary-800 rounded-lg">
               <svg 
-                className="w-4 h-4 text-earth-600 dark:text-earth-400" 
+                className="w-4 h-4 text-primary-600 dark:text-primary-400" 
                 fill="none" 
                 stroke="currentColor" 
                 viewBox="0 0 24 24"
@@ -72,13 +72,13 @@ function Header() {
                   d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" 
                 />
               </svg>
-              <span className="text-sm font-medium text-earth-700 dark:text-earth-300">
+              <span className="text-sm font-medium text-primary-700 dark:text-primary-300">
                 {user.email}
               </span>
             </div>
             <button
               onClick={handleSignOut}
-              className="px-4 py-2 text-sm font-medium text-earth-600 dark:text-earth-400 hover:text-earth-900 dark:hover:text-earth-50 hover:bg-earth-100 dark:hover:bg-earth-800 rounded-lg transition-all inline-flex items-center gap-2"
+              className="px-4 py-2 text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-50 hover:bg-primary-100 dark:hover:bg-primary-800 rounded-lg transition-all inline-flex items-center gap-2"
             >
               <span>Sign Out</span>
               <svg 
@@ -112,7 +112,7 @@ export default function RootLayout({
       <head>
         <Script src="https://accounts.google.com/gsi/client" async defer />
       </head>
-      <body className="font-palatino antialiased bg-earth-50 text-earth-900 dark:bg-earth-900 dark:text-earth-50">
+      <body className="font-palatino antialiased bg-primary-50 text-primary-900 dark:bg-primary-900 dark:text-primary-50">
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

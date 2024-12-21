@@ -62,7 +62,7 @@ export function DocumentContent({
         elements.push(
           <span
             key={`text-${lastIndex}`}
-            className="text-earth-900 dark:text-earth-100"
+            className="text-primary-900 dark:text-primary-100"
             data-index={lastIndex}
           >
             {content.slice(lastIndex, highlight.startOffset)}
@@ -73,15 +73,15 @@ export function DocumentContent({
       elements.push(
         <span
           key={highlight.id}
-          className="bg-yellow-100/40 dark:bg-yellow-500/40 text-earth-900 
-                   dark:text-earth-100 group cursor-pointer hover:bg-yellow-200/40 
+          className="bg-yellow-100/40 dark:bg-yellow-500/40 text-primary-900 
+                   dark:text-primary-100 group cursor-pointer hover:bg-yellow-200/40 
                    dark:hover:bg-yellow-600/40 transition-colors"
           onClick={() => onHighlightClick(highlight.conversationId)}
           data-index={highlight.startOffset}
         >
           {content.slice(highlight.startOffset, highlight.endOffset)}
           <span className="invisible group-hover:visible absolute -top-6 left-1/2 
-                         -translate-x-1/2 bg-earth-800 text-white px-2 py-1 
+                         -translate-x-1/2 bg-primary-800 text-white px-2 py-1 
                          rounded text-sm whitespace-nowrap">
             Click to open chat
           </span>
@@ -95,7 +95,7 @@ export function DocumentContent({
       elements.push(
         <span
           key="text-end"
-          className="text-earth-900 dark:text-earth-100"
+          className="text-primary-900 dark:text-primary-100"
           data-index={lastIndex}
         >
           {content.slice(lastIndex)}
@@ -107,7 +107,7 @@ export function DocumentContent({
   }, [content, highlights, onHighlightClick]);
 
   return (
-    <div className="bg-white dark:bg-earth-800 rounded-lg shadow-sm p-6 relative">
+    <div className="bg-white dark:bg-primary-800 rounded-lg shadow-sm p-6 relative">
       <div 
         className="prose dark:prose-invert max-w-none"
         onMouseUp={handleTextSelection}

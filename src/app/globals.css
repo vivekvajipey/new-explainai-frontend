@@ -2,17 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Base theme colors - these will be our earth theme by default */
 :root {
-  --earth-50: #f6f5f1;
-  --earth-100: #e3e0d7;
-  --earth-200: #cdc7b9;
-  --earth-300: #b3aa96;
-  --earth-400: #9c9077;
-  --earth-500: #867a61;
-  --earth-600: #6b614c;
-  --earth-700: #504939;
-  --earth-800: #363127;
-  --earth-900: #1c1914;
+  /* Primary colors (exactly matching previous earth colors) */
+  --primary-50: #f6f5f1;  /* earth-50 */
+  --primary-100: #e3e0d7; /* earth-100 */
+  --primary-200: #cdc7b9; /* earth-200 */
+  --primary-300: #b3aa96; /* earth-300 */
+  --primary-400: #9c9077; /* earth-400 */
+  --primary-500: #867a61; /* earth-500 */
+  --primary-600: #6b614c; /* earth-600 */
+  --primary-700: #504939; /* earth-700 */
+  --primary-800: #363127; /* earth-800 */
+  --primary-900: #1c1914; /* earth-900 */
 }
 
 body {
@@ -27,8 +29,8 @@ body {
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
+    --primary: var(--primary-900);
+    --primary-foreground: var(--primary-50);
     --secondary: 0 0% 96.1%;
     --secondary-foreground: 0 0% 9%;
     --muted: 0 0% 96.1%;
@@ -54,8 +56,8 @@ body {
     --card-foreground: 0 0% 98%;
     --popover: 0 0% 3.9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
+    --primary: var(--primary-50);
+    --primary-foreground: var(--primary-900);
     --secondary: 0 0% 14.9%;
     --secondary-foreground: 0 0% 98%;
     --muted: 0 0% 14.9%;

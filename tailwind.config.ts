@@ -10,17 +10,19 @@ export default {
   theme: {
   	extend: {
   		colors: {
-  			earth: {
-  				'50': '#f6f5f1',
-  				'100': '#e3e0d7',
-  				'200': '#cdc7b9',
-  				'300': '#b3aa96',
-  				'400': '#9c9077',
-  				'500': '#867a61',
-  				'600': '#6b614c',
-  				'700': '#504939',
-  				'800': '#363127',
-  				'900': '#1c1914'
+  			primary: {
+  				'50': 'var(--primary-50)',
+  				'100': 'var(--primary-100)',
+  				'200': 'var(--primary-200)',
+  				'300': 'var(--primary-300)',
+  				'400': 'var(--primary-400)',
+  				'500': 'var(--primary-500)',
+  				'600': 'var(--primary-600)',
+  				'700': 'var(--primary-700)',
+  				'800': 'var(--primary-800)',
+  				'900': 'var(--primary-900)',
+  				DEFAULT: 'hsl(var(--primary))',
+  				foreground: 'hsl(var(--primary-foreground))'
   			},
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
@@ -31,10 +33,6 @@ export default {
   			popover: {
   				DEFAULT: 'hsl(var(--popover))',
   				foreground: 'hsl(var(--popover-foreground))'
-  			},
-  			primary: {
-  				DEFAULT: 'hsl(var(--primary))',
-  				foreground: 'hsl(var(--primary-foreground))'
   			},
   			secondary: {
   				DEFAULT: 'hsl(var(--secondary))',

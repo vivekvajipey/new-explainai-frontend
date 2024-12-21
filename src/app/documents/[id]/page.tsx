@@ -57,7 +57,7 @@ function DocumentPageContent({ id }: { id: string }) {
   if (!metadata || !isConnected) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-pulse text-earth-600">
+        <div className="animate-pulse text-primary-600">
           {!isConnected ? 'Connecting...' : 'Loading document...'}
         </div>
       </div>
@@ -91,7 +91,7 @@ function DocumentPageContent({ id }: { id: string }) {
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">{metadata.title}</h1>
         <div className="flex items-center justify-between">
-          <p className="text-earth-600 dark:text-earth-300">
+          <p className="text-primary-600 dark:text-primary-300">
             {metadata.pages} pages • Chunk {currentChunkIndex + 1} of {metadata.chunks.length}
           </p>
           <div className="flex items-center space-x-2">
@@ -100,8 +100,8 @@ function DocumentPageContent({ id }: { id: string }) {
               disabled={currentChunkIndex === 0}
               className={`p-2 rounded-lg ${
                 currentChunkIndex === 0
-                  ? 'text-earth-700 cursor-not-allowed'
-                  : 'text-earth-400 hover:bg-earth-100 dark:hover:bg-earth-800'
+                  ? 'text-primary-700 cursor-not-allowed'
+                  : 'text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-800'
               }`}
             >
               <ChevronLeft className="w-5 h-5" />
@@ -111,8 +111,8 @@ function DocumentPageContent({ id }: { id: string }) {
               disabled={currentChunkIndex === metadata.chunks.length - 1}
               className={`p-2 rounded-lg ${
                 currentChunkIndex === metadata.chunks.length - 1
-                  ? 'text-earth-700 cursor-not-allowed'
-                  : 'text-earth-400 hover:bg-earth-100 dark:hover:bg-earth-800'
+                  ? 'text-primary-700 cursor-not-allowed'
+                  : 'text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-800'
               }`}
             >
               <ChevronRight className="w-5 h-5" />
@@ -141,7 +141,7 @@ function DocumentPageContent({ id }: { id: string }) {
           </div>
         )}
         {!isConnected && (
-          <div className="text-earth-500 text-center">
+          <div className="text-primary-500 text-center">
             Connecting...
           </div>
         )}
