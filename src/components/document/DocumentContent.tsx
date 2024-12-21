@@ -81,7 +81,7 @@ export function DocumentContent({
         >
           {content.slice(highlight.startOffset, highlight.endOffset)}
           <span className="invisible group-hover:visible absolute -top-6 left-1/2 
-                         -translate-x-1/2 bg-[var(--primary-800)] text-white px-2 py-1 
+                         -translate-x-1/2 bg-[var(--primary-800)] text-[var(--primary-50)] px-2 py-1 
                          rounded text-sm whitespace-nowrap">
             Click to open chat
           </span>
@@ -107,9 +107,9 @@ export function DocumentContent({
   }, [content, highlights, onHighlightClick]);
 
   return (
-    <div className="bg-white dark:bg-[var(--primary-800)] rounded-lg shadow-sm p-6 relative">
+    <div className="bg-[var(--primary-300)] dark:bg-[var(--primary-800)] rounded-lg shadow-sm p-6 relative">
       <div 
-        className="prose dark:prose-invert max-w-none"
+        className="prose dark:prose-invert max-w-none prose-pre:bg-[var(--primary-50)] dark:prose-pre:bg-[var(--primary-900)]"
         onMouseUp={handleTextSelection}
       >
         <pre className="whitespace-pre-wrap font-palatino">

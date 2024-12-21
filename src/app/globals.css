@@ -5,7 +5,7 @@
 /* Base theme colors - these will be our earth theme by default */
 :root {
   /* Primary colors (exactly matching previous earth colors) */
-  --primary-50: #f6f5f1;  /* earth-50 */
+  --primary-50: #f9f3eb;  /* earth-50 */
   --primary-100: #e3e0d7; /* earth-100 */
   --primary-200: #cdc7b9; /* earth-200 */
   --primary-300: #b3aa96; /* earth-300 */

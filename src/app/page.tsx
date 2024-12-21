@@ -179,7 +179,7 @@ export default function Home() {
 
       {/* Main Content */}
       <section className="px-4">
-        <div className="bg-[var(--primary-50)]/80 dark:bg-[var(--primary-800)]/80 backdrop-blur-lg rounded-3xl p-12 max-w-3xl mx-auto shadow-2xl shadow-[var(--primary-900)]/5 dark:shadow-[var(--primary-900)]/20 border border-[var(--primary-200)]/50 dark:border-[var(--primary-700)]/50">
+        <div className="bg-[var(--primary-200)] dark:bg-[var(--primary-800)] backdrop-blur-lg rounded-3xl p-12 max-w-3xl mx-auto shadow-2xl shadow-[var(--primary-900)]/5 dark:shadow-[var(--primary-900)]/20 border border-[var(--primary-200)]/50 dark:border-[var(--primary-700)]/50">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-[var(--primary-900)] dark:text-[var(--primary-50)] mb-4">
               {isDemo ? "Try Our Example Documents" : user ? "Your Documents" : "Try Our Example Documents"}
