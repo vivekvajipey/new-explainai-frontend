@@ -267,8 +267,8 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
             onClick={() => setActiveTab('main')}
             className={`px-4 py-2 rounded-lg ${
               activeTab === 'main'
-                ? 'bg-primary-100 text-primary-600'
-                : 'bg-primary-600 text-white hover:bg-primary-200'
+                ? 'bg-[var(--primary-100)] text-[var(--primary-600)]'
+                : 'bg-[var(--primary-600)] text-white hover:bg-[var(--primary-200)]'
             }`}
           >
             Main
@@ -279,8 +279,8 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
               onClick={() => setActiveTab(conv.id)}
               className={`px-4 py-2 rounded-lg ${
                 activeTab === conv.id
-                  ? 'bg-primary-100 text-primary-600'
-                  : 'bg-primary-600 text-white hover:bg-primary-200'
+                  ? 'bg-[var(--primary-100)] text-[var(--primary-600)]'
+                  : 'bg-[var(--primary-600)] text-white hover:bg-[var(--primary-200)]'
               }`}
             >
               {conv.highlightText!.substring(0, 20)}...
@@ -312,7 +312,9 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
             />
           )
         ) : (
-          <div>Initializing conversations...</div>
+          <div className="text-[var(--primary-500)] text-center">
+            Initializing conversations...
+          </div>
         )}
       </div>
     );

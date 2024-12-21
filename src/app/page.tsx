@@ -197,7 +197,7 @@ export default function Home() {
                 <div className="relative w-full max-w-2xl mx-auto">
                   <button
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className={`w-full px-5 py-3.5 rounded-xl bg-white/95 dark:bg-[var(--primary-900)]/95 text-left shadow-sm
+                    className={`w-full px-5 py-3.5 rounded-xl bg-[var(--primary-50)] dark:bg-[var(--primary-900)] text-left shadow-sm
                       border border-[var(--primary-200)] dark:border-[var(--primary-700)] hover:border-[var(--primary-300)] dark:hover:border-[var(--primary-600)]
                       focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--primary-500)] dark:focus:ring-[var(--primary-400)]
                       transition-all duration-200 backdrop-blur-sm
@@ -225,7 +225,7 @@ export default function Home() {
 
                   {/* Dropdown menu */}
                   {isDropdownOpen && (
-                    <div className="absolute z-10 mt-1 w-full bg-white dark:bg-[var(--primary-900)] shadow-lg rounded-xl border border-[var(--primary-200)] dark:border-[var(--primary-700)] max-h-96 overflow-y-auto">
+                    <div className="absolute z-10 mt-1 w-full bg-[var(--primary-50)] dark:bg-[var(--primary-900)] shadow-lg rounded-xl border border-[var(--primary-200)] dark:border-[var(--primary-700)] max-h-96 overflow-y-auto">
                       <div className="py-2">
                         {userDocuments.length > 0 ? (
                           <div>
