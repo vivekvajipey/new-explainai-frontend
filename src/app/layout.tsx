@@ -11,6 +11,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSocket } from "@/contexts/SocketContext";
 import { useConversationStore } from "@/stores/conversationStores";
+import Link from 'next/link';
 
 function AuthInitializer() {
   const { login } = useAuth();
@@ -50,7 +51,11 @@ function Header() {
   return (
     <header className="border-b border-earth-200 dark:border-earth-800 bg-earth-50/50 dark:bg-earth-900/50 backdrop-blur-sm">
       <nav className="container mx-auto px-4 py-4 flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-earth-900 dark:text-earth-50">ExplainAI</h1>
+        <Link href="/" className="hover:opacity-80 transition-opacity">
+          <h1 className="text-2xl font-bold text-earth-900 dark:text-earth-50">
+            ExplainAI
+          </h1>
+        </Link>
         {user && (
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 px-3 py-2 bg-earth-100 dark:bg-earth-800 rounded-lg">
