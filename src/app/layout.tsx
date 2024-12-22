@@ -6,56 +6,12 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/lib/auth/AuthContext";
 import Script from "next/script";
 import { useAuth } from "@/lib/auth/AuthContext";
-import { initializeGoogleAuth } from "@/lib/auth/google";
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSocket } from "@/contexts/SocketContext";
 import { useConversationStore } from "@/stores/conversationStores";
 import Link from 'next/link';
-
-import { useTheme } from "next-themes";
-import { Sun, Moon } from "lucide-react";
-
-function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
-  const isDark = theme === "dark";
-
-  return (
-    <button
-      onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="w-14 h-7 rounded-full p-1 relative bg-button-secondary-bg 
-                transition-colors duration-200"
-      aria-label="Toggle theme"
-    >
-      <div
-        className={`absolute top-1 left-1 w-5 h-5 rounded-full 
-                   transform transition-transform duration-200 ease-in-out
-                   flex items-center justify-center
-                   ${isDark ? "translate-x-7 bg-gray-800" : "translate-x-0 bg-yellow-400"}`}
-      >
-        {isDark ? (
-          <Moon className="w-3 h-3 text-gray-200" />
-        ) : (
-          <Sun className="w-3 h-3 text-yellow-800" />
-        )}
-      </div>
-    </button>
-  );
-}
-
-function AuthInitializer() {
-  const { login } = useAuth();
-
-  useEffect(() => {
-    initializeGoogleAuth((token) => {
-      login(token).catch((error) => {
-        console.error('Login failed:', error);
-      });
-    });
-  }, [login]);
-
-  return null;
-}
+import { ThemeToggle } from "@/components/header/ThemeToggle";
+import { AuthInitializer } from "@/components/header/AuthInitializer";
 
 function Header() {
   const router = useRouter();

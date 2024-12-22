@@ -27,8 +27,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const savedToken = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
     if (savedToken && savedUser) {
-      setToken(savedToken);
-      setUser(JSON.parse(savedUser));
+      // Check if token is expired
+      if (!checkTokenExpiration()) {
+        setToken(savedToken);
+        setUser(JSON.parse(savedUser));
+      }
     }
   }, []);
 
@@ -57,10 +60,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = JSON.parse(responseText);
       console.log('Login successful, received data:', { ...data, access_token: '***' });
       
-      setToken(data.access_token);
-      setUser(data.user);
+      // Store token expiration time (24 hours from now)
+      const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
+      localStorage.setItem('tokenExpiresAt', expiresAt.toString());
       
+      setToken(data.access_token);
       localStorage.setItem('token', data.access_token);
+      
+      setUser(data.user);
       localStorage.setItem('user', JSON.stringify(data.user));
     } catch (error) {
       console.error('Login error:', error);
@@ -68,11 +75,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const checkTokenExpiration = () => {
+    const expiresAt = localStorage.getItem('tokenExpiresAt');
+    if (expiresAt) {
+      const isExpired = Date.now() > parseInt(expiresAt);
+      if (isExpired) {
+        console.log('Token has expired, logging out');
+        logout();
+        return true;
+      }
+    }
+    return false;
+  };
+
+  interface GoogleNotification {
+    isNotDisplayed(): boolean;
+    isSkippedMoment(): boolean;
+  }
+
+  const refreshToken = async () => {
+    await new Promise<void>((resolve, reject) => {
+      // @ts-expect-error google.accounts.id is added by Google Identity script
+      google.accounts.id.prompt((notification: GoogleNotification) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          logout();
+          reject(new Error('Google auth prompt was skipped or not displayed'));
+        }
+      });
+    });
+  };
+
+  // Add interval to check token expiration
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (token && checkTokenExpiration()) {
+        refreshToken().catch(console.error);
+      }
+    }, 60000); // Check every minute
+
+    return () => clearInterval(interval);
+  }, [token]);
+
   const logout = () => {
     setUser(null);
     setToken(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('tokenExpiresAt');
   };
 
   return (

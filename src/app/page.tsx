@@ -63,7 +63,14 @@ export default function Home() {
   // Handle file upload
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !token) return;
+    if (!file || !token) {
+      if (!token) {
+        // If no token, prompt for login
+        console.log('No token available, please log in');
+        return;
+      }
+      return;
+    }
 
     setIsUploading(true);
     setUploadProgress(0);
@@ -80,7 +87,7 @@ export default function Home() {
             setUploadProgress(percentage);
             setChunks({ total: progress.total_chunks, processed: progress.processed_chunks });
           }
-          
+        
           // Inside the progress interval in handleFileUpload
           if (progress.is_complete) {
             console.log('Upload complete detected, clearing interval');
@@ -120,6 +127,13 @@ export default function Home() {
           }
         } catch (error) {
           console.error('Error checking progress:', error);
+          if (error instanceof Error && 'status' in error && error.status === 401) {
+            // Token expired during upload
+            clearInterval(progressInterval);
+            setIsUploading(false);
+            setUploadProgress(0);
+            // Let AuthContext handle the token refresh
+          }
         }
       }, 1000);
 
@@ -128,6 +142,10 @@ export default function Home() {
 
     } catch (error) {
       console.error('Upload failed:', error);
+      if (error instanceof Error && 'status' in error && error.status === 401) {
+        // Token expired before upload
+        // Let AuthContext handle the token refresh
+      }
       setIsUploading(false);
       setUploadProgress(0);
     }
