@@ -87,6 +87,14 @@
   --color-button-secondary-text: var(--muted-blue-700);
   --color-button-secondary-hover: var(--pale-blue-300);
   
+  --color-button-upload-bg: var(--pale-blue-200);
+  --color-button-upload-text: var(--muted-blue-700);
+  --color-button-upload-hover: var(--pale-blue-300);
+  
+  --color-button-analyze-bg: #0284c5;
+  --color-button-analyze-text: white;
+  --color-button-analyze-hover: #0369a1;
+  
   --color-input-bg: white;
   --color-input-text: var(--muted-blue-900);
   --color-input-border: var(--pale-blue-300);

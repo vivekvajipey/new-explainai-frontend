@@ -145,7 +145,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <title>ExplainAI</title>
         <Script src="https://accounts.google.com/gsi/client" async defer />
+        <link rel="icon" href="/icon.png"/>
       </head>
       <body className="font-palatino antialiased bg-background text-foreground">
         <ThemeProvider

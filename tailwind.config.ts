@@ -48,6 +48,16 @@ export default {
   					text: 'var(--color-button-secondary-text)',
   					hover: 'var(--color-button-secondary-hover)',
   				},
+				upload: {
+					bg: 'var(--color-button-upload-bg)',
+					text: 'var(--color-button-upload-text)',
+					hover: 'var(--color-button-upload-hover)',
+				},
+				analyze: {
+					bg: 'var(--color-button-analyze-bg)',
+					text: 'var(--color-button-analyze-text)',
+					hover: 'var(--color-button-analyze-hover)',
+				},
   			},
   			
   			// Form inputs
