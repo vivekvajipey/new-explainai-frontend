@@ -10,7 +10,6 @@
   --pale-blue-200: #d2e0fb;
   --pale-blue-300: #abc5f8;
   --pale-blue-400: #84aaf5;
-  --pale-blue-450: #749df4;
   --pale-blue-500: #5d8ff2;
   --pale-blue-600: #3674ef;
   --pale-blue-700: #1559ec;
@@ -120,11 +119,11 @@
   --color-doc-nav-button-disabled: var(--muted-blue-200);
   
   /* Document tabs colors */
-  --color-tab-active-bg: var(--pale-blue-450);  /* Clear white background for active tab */
-  --color-tab-active-text: var(--muted-blue-900);  /* Darker text for active tab */
-  --color-tab-inactive-bg: var(--pale-blue-100);  /* Light blue for inactive */
-  --color-tab-inactive-text: var(--muted-blue-600);  /* Muted text for inactive */
-  --color-tab-hover-bg: var(--pale-blue-200);  /* Slightly darker on hover */
+  --color-tab-active-bg: var(--pale-blue-200);
+  --color-tab-active-text: var(--muted-blue-700);
+  --color-tab-inactive-bg: var(--muted-blue-200);
+  --color-tab-inactive-text: white;
+  --color-tab-hover-bg: var(--pale-blue-300);
   
   /* Document content colors */
   --color-doc-content-bg: var(--pale-blue-50);
@@ -194,8 +193,8 @@
   
   --color-message-user-bg: var(--pale-green-900);
   --color-message-user-text: var(--pale-green-100);
-  --color-message-ai-bg: var(--muted-blue-800);
-  --color-message-ai-text: var(--pale-blue-100);
+  --color-message-ai-bg: var(--pale-yellow-800);
+  --color-message-ai-text: var(--pale-yellow-100);
   
   --color-tooltip-bg: var(--muted-blue-800);
   --color-tooltip-text: var(--pale-blue-100);
@@ -219,9 +218,9 @@
   --color-doc-nav-button-disabled: var(--muted-blue-600);
   
   /* Document tabs colors */
-  --color-tab-active-bg: var(--muted-blue-700);
-  --color-tab-active-text: var(--pale-blue-100);
-  --color-tab-inactive-bg: var(--muted-blue-600);
+  --color-tab-active-bg: var(--pale-green-800);
+  --color-tab-active-text: var(--pale-green-100);
+  --color-tab-inactive-bg: var(--muted-blue-400);
   --color-tab-inactive-text: var(--pale-blue-200);
   --color-tab-hover-bg: var(--muted-blue-500);
   
@@ -250,11 +249,16 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
   }
+
+  * {
+    @apply border-border;
+  }
 }
 
 /* Component styles */
 @layer components {
   .document-container {
-    @apply rounded-lg border-2 border-doc-border bg-doc-bg shadow-sm overflow-hidden;
+    @apply rounded-lg border-2 shadow-sm;
+    border-style: solid;
   }
 }

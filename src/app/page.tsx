@@ -320,7 +320,7 @@ export default function Home() {
                     <label
                       htmlFor="file-upload"
                       className="flex items-center justify-center px-6 py-3 border border-transparent 
-                               text-base font-medium rounded-md text-button-primary-text 
+                               text-base font-medium rounded-lg text-button-primary-text 
                                bg-button-primary-bg hover:bg-button-primary-hover
                                focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-input-focus 
                                cursor-pointer transition-all duration-200 w-full shadow-sm

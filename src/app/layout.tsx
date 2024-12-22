@@ -13,27 +13,35 @@ import { useSocket } from "@/contexts/SocketContext";
 import { useConversationStore } from "@/stores/conversationStores";
 import Link from 'next/link';
 
-// import { useTheme } from "next-themes";
-// import { Sun, Moon } from "lucide-react";
+import { useTheme } from "next-themes";
+import { Sun, Moon } from "lucide-react";
 
-// function ThemeToggle() {
-//   const { theme, setTheme } = useTheme();
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  const isDark = theme === "dark";
 
-//   return (
-//     <button
-//       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-//       className="p-2 rounded-lg bg-button-secondary-bg text-button-secondary-text 
-//                 hover:bg-button-secondary-hover transition-colors"
-//       aria-label="Toggle theme"
-//     >
-//       {theme === "dark" ? (
-//         <Sun className="w-5 h-5" />
-//       ) : (
-//         <Moon className="w-5 h-5" />
-//       )}
-//     </button>
-//   );
-// }
+  return (
+    <button
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      className="w-14 h-7 rounded-full p-1 relative bg-button-secondary-bg 
+                transition-colors duration-200"
+      aria-label="Toggle theme"
+    >
+      <div
+        className={`absolute top-1 left-1 w-5 h-5 rounded-full 
+                   transform transition-transform duration-200 ease-in-out
+                   flex items-center justify-center
+                   ${isDark ? "translate-x-7 bg-gray-800" : "translate-x-0 bg-yellow-400"}`}
+      >
+        {isDark ? (
+          <Moon className="w-3 h-3 text-gray-200" />
+        ) : (
+          <Sun className="w-3 h-3 text-yellow-800" />
+        )}
+      </div>
+    </button>
+  );
+}
 
 function AuthInitializer() {
   const { login } = useAuth();
@@ -79,7 +87,7 @@ function Header() {
           </h1>
         </Link>
         <div className="flex items-center gap-3">
-          {/* <ThemeToggle /> */}
+          <ThemeToggle />
           {user && (
             <>
               <div className="flex items-center gap-2 px-3 py-2 bg-header-user-bg rounded-lg">

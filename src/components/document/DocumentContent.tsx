@@ -106,7 +106,7 @@ export function DocumentContent({
   }, [content, highlights, onHighlightClick]);
 
   return (
-    <div className="h-full">
+    <div className="bg-doc-bg">
       <div 
         className="prose max-w-none p-6"
         onMouseUp={handleTextSelection}

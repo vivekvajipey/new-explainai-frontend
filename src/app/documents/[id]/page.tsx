@@ -123,7 +123,7 @@ function DocumentPageContent({ id }: { id: string }) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Document Content */}
-        <div className="document-container">
+        <div className="document-container border-doc-border bg-doc-bg">
           <DocumentContent
             content={currentChunk.content}
             chunkId={currentChunkIndex.toString()}
@@ -134,7 +134,7 @@ function DocumentPageContent({ id }: { id: string }) {
 
         {/* Conversations */}
         {isConnected && (
-          <div className="h-[600px] document-container">
+          <div className="h-[600px] document-container border-doc-border bg-doc-bg">
             <ConversationTabs 
               ref={conversationTabsRef}
               documentId={id}
