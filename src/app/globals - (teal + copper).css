@@ -1,0 +1,221 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Theme color palettes */
+:root {
+  /* Core color palettes */
+  --teal-50: #f0f9f9;
+  --teal-100: #d7f4f4;
+  --teal-200: #afe9e9;
+  --teal-300: #7ed8d8;
+  --teal-400: #4ec7c7;
+  --teal-500: #2eb6b6;
+  --teal-600: #259191;
+  --teal-700: #1c6d6d;
+  --teal-800: #134848;
+  --teal-900: #0a2424;
+
+  --copper-50: #fbf7f4;
+  --copper-100: #f7efe9;
+  --copper-200: #efdfd3;
+  --copper-300: #e7cfbd;
+  --copper-400: #dfbfa7;
+  --copper-500: #d7af91;
+  --copper-600: #c99f7b;
+  --copper-700: #bb8f65;
+  --copper-800: #a77f4f;
+  --copper-900: #936f39;
+
+  --sage-50: #f6f8f6;
+  --sage-100: #edf1ed;
+  --sage-200: #dbe3db;
+  --sage-300: #c9d5c9;
+  --sage-400: #b7c7b7;
+  --sage-500: #a5b9a5;
+  --sage-600: #93ab93;
+  --sage-700: #819d81;
+  --sage-800: #6f8f6f;
+  --sage-900: #5d815d;
+
+  --slate-50: #f8fafc;
+  --slate-100: #f1f5f9;
+  --slate-200: #e2e8f0;
+  --slate-300: #cbd5e1;
+  --slate-400: #94a3b8;
+  --slate-500: #64748b;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1e293b;
+  --slate-900: #0f172a;
+}
+
+/* Semantic color assignments for light theme */
+:root {
+  /* Base UI Colors */
+  --color-background: var(--teal-50);
+  --color-foreground: var(--slate-900);
+  
+  /* Header colors */
+  --color-header-bg: var(--teal-50);
+  --color-header-border: var(--teal-200);
+  --color-header-text: var(--slate-800);
+  --color-header-text-hover: var(--slate-600);
+  --color-header-user-bg: var(--teal-100);
+  --color-header-user-text: var(--slate-700);
+  --color-header-user-icon: var(--slate-500);
+  --color-header-button-hover: var(--teal-100);
+  
+  /* Component-specific colors */
+  --color-nav-bg: var(--teal-100);
+  --color-nav-text: var(--slate-700);
+  --color-nav-hover: var(--teal-200);
+  
+  --color-sidebar-bg: var(--teal-100);
+  --color-sidebar-text: var(--slate-700);
+  --color-sidebar-hover: var(--teal-200);
+  
+  --color-card-bg: white;
+  --color-card-border: var(--teal-200);
+  --color-card-hover: var(--teal-100);
+  
+  --color-button-primary-bg: var(--copper-500);
+  --color-button-primary-text: white;
+  --color-button-primary-hover: var(--copper-600);
+  
+  --color-button-secondary-bg: var(--teal-200);
+  --color-button-secondary-text: var(--slate-700);
+  --color-button-secondary-hover: var(--teal-300);
+  
+  --color-input-bg: white;
+  --color-input-text: var(--slate-900);
+  --color-input-border: var(--teal-300);
+  --color-input-focus: var(--copper-300);
+  
+  --color-message-user-bg: var(--sage-200);
+  --color-message-user-text: var(--slate-900);
+  --color-message-ai-bg: var(--copper-100);
+  --color-message-ai-text: var(--slate-900);
+  
+  --color-tooltip-bg: white;
+  --color-tooltip-text: var(--slate-800);
+  --color-tooltip-border: var(--teal-200);
+  
+  --color-accent: var(--copper-500);
+  --color-success: var(--sage-600);
+  --color-error: #dc2626;
+  
+  /* Document viewer colors */
+  --color-document-bg: white;
+  --color-document-text: var(--slate-900);
+  --color-document-selection: var(--teal-200);
+  --color-document-highlight: var(--copper-100);
+  
+  /* Document page specific colors */
+  --color-doc-title: var(--slate-800);
+  --color-doc-subtitle: var(--slate-600);
+  --color-doc-nav-button: var(--copper-400);
+  --color-doc-nav-button-hover: var(--copper-500);
+  --color-doc-nav-button-disabled: var(--slate-300);
+  
+  /* Document tabs colors */
+  --color-tab-active-bg: var(--teal-200);
+  --color-tab-active-text: var(--slate-700);
+  --color-tab-inactive-bg: var(--slate-200);
+  --color-tab-inactive-text: var(--slate-600);
+  --color-tab-hover-bg: var(--teal-300);
+  
+  /* Document content colors */
+  --color-doc-content-bg: var(--teal-50);
+  --color-doc-content-text: var(--slate-900);
+  --color-doc-content-border: var(--teal-300);
+  --color-doc-highlight-bg: var(--copper-100);
+  --color-doc-highlight-border: var(--copper-200);
+  --color-doc-selection-bg: var(--teal-100);
+}
+
+/* Dark theme overrides */
+.dark {
+  /* Base UI Colors */
+  --color-background: var(--slate-900);
+  --color-foreground: var(--teal-50);
+  
+  /* Header colors */
+  --color-header-bg: var(--slate-900);
+  --color-header-border: var(--slate-800);
+  --color-header-text: var(--teal-100);
+  --color-header-text-hover: var(--teal-200);
+  --color-header-user-bg: var(--slate-800);
+  --color-header-user-text: var(--teal-200);
+  --color-header-user-icon: var(--teal-300);
+  --color-header-button-hover: var(--slate-800);
+  
+  /* Component-specific colors */
+  --color-nav-bg: var(--slate-800);
+  --color-nav-text: var(--teal-100);
+  --color-nav-hover: var(--slate-700);
+  
+  --color-sidebar-bg: var(--slate-800);
+  --color-sidebar-text: var(--teal-100);
+  --color-sidebar-hover: var(--slate-700);
+  
+  --color-card-bg: var(--slate-800);
+  --color-card-border: var(--slate-700);
+  --color-card-hover: var(--slate-700);
+  
+  --color-button-primary-bg: var(--copper-400);
+  --color-button-primary-text: var(--slate-900);
+  --color-button-primary-hover: var(--copper-500);
+  
+  --color-button-secondary-bg: var(--slate-700);
+  --color-button-secondary-text: var(--teal-200);
+  --color-button-secondary-hover: var(--slate-600);
+  
+  --color-input-bg: var(--slate-800);
+  --color-input-text: var(--teal-100);
+  --color-input-border: var(--slate-600);
+  --color-input-focus: var(--copper-600);
+  
+  --color-message-user-bg: var(--slate-800);
+  --color-message-user-text: var(--teal-100);
+  --color-message-ai-bg: var(--slate-700);
+  --color-message-ai-text: var(--teal-100);
+  
+  --color-tooltip-bg: var(--slate-800);
+  --color-tooltip-text: var(--teal-100);
+  --color-tooltip-border: var(--slate-700);
+  
+  --color-accent: var(--copper-400);
+  --color-success: var(--sage-500);
+  --color-error: #ef4444;
+  
+  /* Document viewer colors */
+  --color-document-bg: var(--slate-900);
+  --color-document-text: var(--teal-100);
+  --color-document-selection: var(--slate-700);
+  --color-document-highlight: var(--copper-900);
+  
+  /* Document content colors */
+  --color-doc-content-bg: var(--slate-800);
+  --color-doc-content-text: var(--teal-50);
+  --color-doc-content-border: var(--slate-600);
+  --color-doc-highlight-bg: var(--copper-900);
+  --color-doc-highlight-border: var(--copper-800);
+  --color-doc-selection-bg: var(--slate-700);
+}
+
+/* Base styles */
+@layer base {
+  body {
+    font-family: Palatino, serif;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+  }
+}
+
+/* Component styles */
+@layer components {
+  .document-container {
+    @apply rounded-lg border-2 border-doc-border bg-doc-bg shadow-sm overflow-hidden;
+  }
+}

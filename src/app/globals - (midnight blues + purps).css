@@ -1,0 +1,154 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Theme color palettes */
+:root {
+  /* Core color palettes */
+  --midnight-50: #f4f6fb;
+  --midnight-100: #e8ecf7;
+  --midnight-200: #d1d9ef;
+  --midnight-300: #b9c5e7;
+  --midnight-400: #a2b1df;
+  --midnight-500: #8b9dd7;
+  --midnight-600: #7389cf;
+  --midnight-700: #5c75c7;
+  --midnight-800: #4461bf;
+  --midnight-900: #2d4db7;
+
+  --violet-50: #faf5ff;
+  --violet-100: #f3e8ff;
+  --violet-200: #e9d5ff;
+  --violet-300: #d8b4fe;
+  --violet-400: #c084fc;
+  --violet-500: #a855f7;
+  --violet-600: #9333ea;
+  --violet-700: #7e22ce;
+  --violet-800: #6b21a8;
+  --violet-900: #581c87;
+
+  --indigo-50: #eef2ff;
+  --indigo-100: #e0e7ff;
+  --indigo-200: #c7d2fe;
+  --indigo-300: #a5b4fc;
+  --indigo-400: #818cf8;
+  --indigo-500: #6366f1;
+  --indigo-600: #4f46e5;
+  --indigo-700: #4338ca;
+  --indigo-800: #3730a3;
+  --indigo-900: #312e81;
+
+  --slate-50: #f8fafc;
+  --slate-100: #f1f5f9;
+  --slate-200: #e2e8f0;
+  --slate-300: #cbd5e1;
+  --slate-400: #94a3b8;
+  --slate-500: #64748b;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1e293b;
+  --slate-900: #0f172a;
+}
+
+/* Semantic color assignments */
+:root {
+  /* Base UI Colors */
+  --color-background: var(--slate-900);
+  --color-foreground: var(--slate-100);
+  
+  /* Header colors */
+  --color-header-bg: var(--slate-800);
+  --color-header-border: var(--slate-700);
+  --color-header-text: var(--slate-100);
+  --color-header-text-hover: var(--violet-400);
+  --color-header-user-bg: var(--slate-700);
+  --color-header-user-text: var(--slate-100);
+  --color-header-user-icon: var(--violet-400);
+  --color-header-button-hover: var(--slate-600);
+  
+  /* Component-specific colors */
+  --color-nav-bg: var(--slate-800);
+  --color-nav-text: var(--slate-100);
+  --color-nav-hover: var(--slate-700);
+  
+  --color-sidebar-bg: var(--slate-800);
+  --color-sidebar-text: var(--slate-100);
+  --color-sidebar-hover: var(--slate-700);
+  
+  --color-card-bg: var(--slate-800);
+  --color-card-border: var(--slate-700);
+  --color-card-hover: var(--slate-700);
+  
+  --color-button-primary-bg: var(--violet-500);
+  --color-button-primary-text: var(--slate-100);
+  --color-button-primary-hover: var(--violet-600);
+  
+  --color-button-secondary-bg: var(--slate-700);
+  --color-button-secondary-text: var(--slate-100);
+  --color-button-secondary-hover: var(--slate-600);
+  
+  --color-input-bg: var(--slate-800);
+  --color-input-text: var(--slate-100);
+  --color-input-border: var(--slate-600);
+  --color-input-focus: var(--violet-500);
+  
+  --color-message-user-bg: var(--indigo-900);
+  --color-message-user-text: var(--slate-100);
+  --color-message-ai-bg: var(--slate-800);
+  --color-message-ai-text: var(--slate-100);
+  
+  --color-tooltip-bg: var(--slate-800);
+  --color-tooltip-text: var(--slate-100);
+  --color-tooltip-border: var(--slate-700);
+  
+  --color-accent: var(--violet-500);
+  --color-success: #22c55e;
+  --color-error: #ef4444;
+  
+  /* Document viewer colors */
+  --color-doc-content-bg: var(--slate-800);
+  --color-doc-content-text: var(--slate-100);
+  --color-doc-content-border: var(--slate-600);
+  --color-doc-highlight-bg: var(--violet-900);
+  --color-doc-highlight-border: var(--violet-700);
+  --color-doc-selection-bg: var(--slate-700);
+  
+  /* Document page specific colors */
+  --color-doc-title: var(--slate-100);
+  --color-doc-subtitle: var(--slate-400);
+  --color-doc-nav-button: var(--violet-400);
+  --color-doc-nav-button-hover: var(--violet-500);
+  --color-doc-nav-button-disabled: var(--slate-600);
+  
+  /* Document tabs colors */
+  --color-tab-active-bg: var(--violet-900);
+  --color-tab-active-text: var(--violet-100);
+  --color-tab-inactive-bg: var(--slate-700);
+  --color-tab-inactive-text: var(--slate-300);
+  --color-tab-hover-bg: var(--violet-800);
+}
+
+/* Base styles */
+@layer base {
+  body {
+    font-family: Palatino, serif;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+  }
+}
+
+/* Component styles */
+@layer components {
+  .document-container {
+    @apply rounded-xl border-2 border-doc-border bg-doc-bg shadow-md overflow-hidden;
+  }
+
+  /* Add styles for inner containers */
+  .document-content {
+    @apply rounded-xl bg-doc-bg;
+  }
+
+  .conversation-container {
+    @apply rounded-xl bg-doc-bg;
+  }
+}
