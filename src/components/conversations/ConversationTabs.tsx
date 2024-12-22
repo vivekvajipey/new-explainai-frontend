@@ -152,6 +152,8 @@ const ConversationTabs = forwardRef<ConversationTabsRef, ConversationTabsProps>(
       // This effect re-runs when currentSequence changes, reloading the chunk conversations for that chunk.
       const loadChunkForNewSequence = async () => {
         try {
+          useConversationStore.getState().removeHighlightsForChunk(currentSequence);          
+
           // Clear out old chunk conversations for a clean slate if desired
           setChunkConversations([]);
     
