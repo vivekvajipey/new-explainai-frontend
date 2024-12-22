@@ -81,7 +81,9 @@ export default function Home() {
             setChunks({ total: progress.total_chunks, processed: progress.processed_chunks });
           }
           
+          // Inside the progress interval in handleFileUpload
           if (progress.is_complete) {
+            console.log('Upload complete detected, clearing interval');
             clearInterval(progressInterval);
             // Set progress to 100% first
             setUploadProgress(100);
@@ -89,21 +91,32 @@ export default function Home() {
             
             // Small delay before showing success
             setTimeout(async () => {
+              console.log('Starting post-upload processing');
               // Refresh the documents list
               const docs = await listDocuments(token);
+              console.log('Fetched updated document list:', docs);
               setUserDocuments(docs);
               
               // Set success state and auto-select the new document
               setUploadSuccess(true);
-              const newDoc = docs.find(d => d.title === file.name.replace('.pdf', ''));
+              const newDoc = docs.sort((a, b) => 
+                new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+              )[0];
+              
+              console.log('Using most recent document:', newDoc);
+              
               if (newDoc) {
                 setSelectedText(newDoc);
+                console.log('Set selected text, preparing to redirect to:', `/documents/${newDoc.id}`);
                 // Wait a moment to show success before redirecting
                 setTimeout(() => {
+                  console.log('Attempting redirect now');
                   router.push(`/documents/${newDoc.id}`);
-                }, 1500);
+                }, 750);
+              } else {
+                console.log('Could not find new document in updated list');
               }
-            }, 500); // Wait for progress bar animation to complete
+            }, 250);
           }
         } catch (error) {
           console.error('Error checking progress:', error);
