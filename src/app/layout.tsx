@@ -10,8 +10,8 @@ import { useRouter } from "next/navigation";
 import { useSocket } from "@/contexts/SocketContext";
 import { useConversationStore } from "@/stores/conversationStores";
 import Link from 'next/link';
-import { ThemeToggle } from "@/components/header/ThemeToggle";
 import { AuthInitializer } from "@/components/header/AuthInitializer";
+import { ThemeToggle } from "@/components/header/ThemeToggle";
 
 function Header() {
   const router = useRouter();
@@ -44,6 +44,15 @@ function Header() {
         </Link>
         <div className="flex items-center gap-3">
           <ThemeToggle />
+          {!user && (
+            <a
+              href="/login.html"
+              className="px-6 py-3 bg-button-primary-bg text-button-primary-text rounded-lg 
+                       hover:bg-button-primary-hover transition-all shadow-sm"
+            >
+              Sign In
+            </a>
+          )}
           {user && (
             <>
               <div className="flex items-center gap-2 px-3 py-2 bg-header-user-bg rounded-lg">

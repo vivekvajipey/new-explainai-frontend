@@ -186,19 +186,6 @@ export default function Home() {
 
   return (
     <div className="space-y-8 max-w-6xl mx-auto">
-      {/* Top Navigation */}
-      <nav className="fixed top-0 right-0 p-6 z-50">
-        {!user && (
-          <a
-            href="/login.html"
-            className="px-6 py-3 bg-button-primary-bg text-button-primary-text rounded-lg 
-                     hover:bg-button-primary-hover transition-all shadow-sm"
-          >
-            Sign In
-          </a>
-        )}
-      </nav>
-
       {/* Hero Section */}
       <section className="text-center pt-16 pb-8">
         <h1 className="text-5xl font-bold text-foreground mb-6">
