@@ -5,6 +5,47 @@
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            /* Core color palettes */
+            --pale-blue-50: #f5f8fe;
+            --pale-blue-100: #e8f0fd;
+            --pale-blue-200: #d2e0fb;
+            --pale-blue-300: #abc5f8;
+            --pale-blue-400: #84aaf5;
+            --pale-blue-500: #5d8ff2;
+            --pale-blue-600: #3674ef;
+            --pale-blue-700: #1559ec;
+            --pale-blue-800: #1147bd;
+            --pale-blue-900: #0e3a98;
+
+            --muted-blue-50: #f4f7fa;
+            --muted-blue-100: #e9eff5;
+            --muted-blue-200: #8eaccd;
+            --muted-blue-300: #7596bd;
+            --muted-blue-400: #5c80ad;
+            --muted-blue-500: #436a9d;
+            --muted-blue-600: #35547d;
+            --muted-blue-700: #273e5e;
+            --muted-blue-800: #19283e;
+            --muted-blue-900: #0c121f;
+
+            /* Base UI Colors - Light Mode */
+            --color-background: var(--pale-blue-50);
+            --color-foreground: var(--muted-blue-900);
+            --color-card-bg: white;
+            --color-card-shadow: rgba(12, 18, 31, 0.1);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                /* Base UI Colors - Dark Mode */
+                --color-background: var(--muted-blue-900);
+                --color-foreground: var(--pale-blue-50);
+                --color-card-bg: var(--muted-blue-800);
+                --color-card-shadow: rgba(0, 0, 0, 0.3);
+            }
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -18,19 +59,21 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: var(--earth-50);
-            color: var(--earth-900);
+            background: var(--color-background);
+            color: var(--color-foreground);
             padding: 20px;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         .login-container {
-            background: white;
+            background: var(--color-card-bg);
             padding: 40px;
             border-radius: 16px;
-            box-shadow: 0 20px 40px rgba(80, 73, 57, 0.1);
+            box-shadow: 0 20px 40px var(--color-card-shadow);
             text-align: center;
             max-width: 400px;
             width: 100%;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
         }
 
         .logo {
@@ -40,18 +83,19 @@
         .logo svg {
             width: 48px;
             height: 48px;
-            color: var(--earth-600);
+            color: var(--pale-blue-600);
         }
 
         h1 {
-            color: var(--earth-900);
+            color: var(--color-foreground);
             font-size: 24px;
             font-weight: 700;
             margin-bottom: 12px;
         }
 
         p {
-            color: var(--earth-700);
+            color: var(--color-foreground);
+            opacity: 0.8;
             font-size: 16px;
             line-height: 1.5;
             margin-bottom: 32px;
@@ -68,55 +112,19 @@
             display: flex;
             align-items: center;
             text-align: center;
-            color: var(--earth-600);
+            color: var(--pale-blue-600);
         }
 
         .divider::before,
         .divider::after {
             content: '';
             flex: 1;
-            border-bottom: 1px solid var(--earth-200);
+            border-bottom: 1px solid var(--pale-blue-200);
         }
 
         .divider span {
             padding: 0 16px;
             font-size: 14px;
-        }
-
-        :root {
-            --earth-50: #f6f5f1;
-            --earth-100: #e3e0d7;
-            --earth-200: #cdc7b9;
-            --earth-300: #b3aa96;
-            --earth-400: #9c9077;
-            --earth-500: #867a61;
-            --earth-600: #6b614c;
-            --earth-700: #504939;
-            --earth-800: #363127;
-            --earth-900: #1c1914;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            body {
-                background: var(--earth-900);
-                color: var(--earth-50);
-            }
-
-            .login-container {
-                background: var(--earth-800);
-            }
-
-            h1 {
-                color: var(--earth-50);
-            }
-
-            p {
-                color: var(--earth-300);
-            }
-
-            .logo svg {
-                color: var(--earth-400);
-            }
         }
     </style>
 </head>
