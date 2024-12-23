@@ -92,7 +92,7 @@ function DocumentPageContent({ id }: { id: string }) {
         <h1 className="text-3xl font-bold mb-2 text-doc-title">{metadata.title}</h1>
         <div className="flex items-center justify-between">
           <p className="text-doc-subtitle">
-            {metadata.pages} pages • Chunk {currentChunkIndex + 1} of {metadata.chunks.length}
+            Chunk {currentChunkIndex + 1} of {metadata.chunks.length}
           </p>
           <div className="flex items-center space-x-2">
             <button
