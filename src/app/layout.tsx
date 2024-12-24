@@ -1,6 +1,7 @@
 // app/layout.tsx
 'use client';
 
+import React from 'react';
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/lib/auth/AuthContext";
@@ -12,11 +13,13 @@ import { useConversationStore } from "@/stores/conversationStores";
 import Link from 'next/link';
 import { AuthInitializer } from "@/components/header/AuthInitializer";
 import { ThemeToggle } from "@/components/header/ThemeToggle";
+import { getUserCost } from "@/lib/api";
 
 function Header() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, token } = useAuth();
   const { documentSocket } = useSocket();
+  const [userCost, setUserCost] = React.useState<string | null>(null);
 
   const handleSignOut = () => {
     // Close WebSocket connections
@@ -33,6 +36,24 @@ function Header() {
     // Redirect to home page
     router.push('/');
   };
+
+  // Fetch cost when user logs in
+  React.useEffect(() => {
+    async function fetchCost() {
+      if (user && token) {
+        try {
+          const costData = await getUserCost(token);
+          setUserCost(costData.formatted_cost);
+        } catch (error) {
+          console.error('Failed to fetch user cost:', error);
+        }
+      }
+    }
+    
+    fetchCost();
+    const intervalId = setInterval(fetchCost, 60000);
+    return () => clearInterval(intervalId);
+  }, [user, token]);
 
   return (
     <header className="border-b border-header-border bg-header-bg/50 backdrop-blur-sm">
@@ -55,6 +76,11 @@ function Header() {
           )}
           {user && (
             <>
+              {userCost && (
+                <div className="text-xs text-header-text opacity-70 px-3 py-1 bg-header-user-bg rounded-lg">
+                  Cost: {userCost}
+                </div>
+              )}
               <div className="flex items-center gap-2 px-3 py-2 bg-header-user-bg rounded-lg">
                 <svg 
                   className="w-4 h-4 text-header-user-icon" 

@@ -93,6 +93,23 @@ export async function getUploadProgress(filename: string, token: string): Promis
   return response.json();
 }
 
+export async function getUserCost(token: string): Promise<{ total_cost: number; formatted_cost: string }> {
+  const response = await fetch(`${API_BASE_URL}/api/auth/me/cost`, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch user cost');
+  }
+  
+  const data = await response.json();
+  // Round the formatted cost to 2 decimal places
+  data.formatted_cost = `$${Number(data.total_cost).toFixed(2)}`;
+  return data;
+}
+
 // Base WebSocket class with all the common functionality
 export class BaseWebSocket {
   protected ws: WebSocket | null = null;
