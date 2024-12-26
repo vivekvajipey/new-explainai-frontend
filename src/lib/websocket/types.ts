@@ -1,5 +1,6 @@
 // new-explainai-frontend/src/lib/websocket/ConversationWebSocket.ts
-export type MessageRole = 'system' | 'user' | 'assistant';
+
+import { MessageRole } from "@/types/conversation";
 
 export interface Message {
   id: string;

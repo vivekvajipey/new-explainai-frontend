@@ -1,5 +1,6 @@
 // new-explainai-frontend/src/lib/websocket/ConversationWebSocket.ts
 
+import { useConversationStore } from '@/stores/conversationStores';
 import { 
   ConversationResponse,
   ChunkConversationsResponse,
@@ -11,7 +12,7 @@ import {
   StreamingMessageHandlers,
   ChunkConversationPayload
 } from './types';
-import { useConversationStore } from '@/stores/conversationStores';
+import { MessageRole } from '@/types/conversation';  // This line is already correct
 
 const WS_BASE_URL = 'wss://explainai-new-528ec8eb814a.herokuapp.com';
 
@@ -130,7 +131,7 @@ export class ConversationWebSocket {
             .filter(msg => msg.role !== 'system')
             .map(msg => ({
               id: msg.id,
-              role: msg.role,
+              role: msg.role as MessageRole,  // Add type assertion here
               content: msg.content,
               timestamp: msg.created_at
             }))
@@ -340,7 +341,7 @@ export class ConversationWebSocket {
       conversation_id: response.conversation_id,
       messages: response.messages.map(msg => ({
         id: msg.id,
-        role: msg.role,
+        role: msg.role as MessageRole,  // Add type assertion here
         content: msg.content,
         timestamp: msg.created_at
       }))
