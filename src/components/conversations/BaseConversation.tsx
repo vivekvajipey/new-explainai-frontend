@@ -1,66 +1,43 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Send } from 'lucide-react';
 import { useSocket } from '@/contexts/SocketContext';
 import { useConversationStore } from '@/stores/conversationStores';
+import { useConversationStreaming } from '@/hooks/useConversationStreaming';
 
-export interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: string;
+interface MessageSendConfig {
+  type: 'main' | 'highlight';
+  chunkId: string;
+  highlightText?: string;
 }
 
-export interface BaseConversationProps {
-  documentId: string;
+interface BaseConversationProps {
   conversationId: string;
+  messageSendConfig: MessageSendConfig;
   placeholder?: string;
   className?: string;
-  streamingMessageId?: string;
-  isStreaming?: boolean;
-  onSendMessage: (
-    content: string, 
-    conversationId: string, 
-    setStreamingContent: (content: string) => void
-  ) => Promise<{ message: string }>;
 }
 
 export default function BaseConversation({ 
-  documentId,
   conversationId,
-  onSendMessage,
+  messageSendConfig,
   placeholder = 'Type a message...',
   className = '',
-  streamingMessageId,
-  isStreaming = false,
 }: BaseConversationProps) {
   const { conversationSocket } = useSocket();
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
-  const [streamingContent, setStreamingContent] = useState<string>('');
-
-  console.log("[DEBUG] BaseConversation rendering with conversationId =", conversationId);
+  
   const messages = useConversationStore((state) => {
-    console.log("[DEBUG] useConversationStore selector running for conversationId =", conversationId);
     return conversationId ? state.getMessages(conversationId) : [];
   });
-  console.log("[DEBUG] BaseConversation got messages.length =", messages.length);
-  console.log("documentId =", documentId);
   const addMessage = useConversationStore(state => state.addMessage);
-  // const setMessages = useConversationStore(state => state.setMessages);
-  // const removeMessage = useConversationStore(state => state.removeMessage);
 
-  useEffect(() => {
-    console.log("[DEBUG] BaseConversation.useEffect triggered", {
-      conversationId,
-      // documentId,
-      conversationSocket: !!conversationSocket,
-    });
-  }, [conversationSocket, conversationId]);
-
-  // useEffect(() => {
-  //   messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  // }, [messages]);
+  const { streamingState, handleStreamingMessage } = useConversationStreaming(
+    conversationId,
+    addMessage,
+    conversationSocket
+  );
 
   const sendMessage = async (content: string) => {
     if (!conversationId) {
@@ -78,22 +55,15 @@ export default function BaseConversation({
     try {
       setError(null);
       setInput('');
-      setStreamingContent('');
-
-      if (!conversationSocket?.isConnected) {
-        throw new Error('WebSocket is not connected');
-      }
-
+      
       addMessage(conversationId, userMessage);
-
-      await onSendMessage(content, conversationId, setStreamingContent);
+      await handleStreamingMessage(content, messageSendConfig);
 
     } catch (err) {
       console.error('Failed to send message:', err);
       setError(err instanceof Error ? err.message : 'Failed to send message');
     }
   };
-  
 
   return (
     <div className={`flex flex-col h-[500px] ${className}`}>
@@ -112,8 +82,8 @@ export default function BaseConversation({
               }`}
             >
               <p className="whitespace-pre-wrap">
-                {message.id === streamingMessageId && isStreaming
-                  ? streamingContent
+                {message.id === streamingState.id && streamingState.isStreaming
+                  ? streamingState.content
                   : message.content}
               </p>
             </div>
@@ -144,13 +114,13 @@ export default function BaseConversation({
                      bg-input-bg text-input-text border border-input-border
                      focus:outline-none focus:ring-2 focus:ring-input-focus
                      disabled:opacity-50 transition-colors"
-            disabled={isStreaming || !conversationId}
+            disabled={streamingState.isStreaming || !conversationId}
           />
           <button
             onClick={() => sendMessage(input)}
-            disabled={isStreaming || !conversationId || !input.trim()}
+            disabled={streamingState.isStreaming || !conversationId || !input.trim()}
             className={`p-2 rounded-lg transition-colors ${
-              isStreaming || !conversationId || !input.trim()
+              streamingState.isStreaming || !conversationId || !input.trim()
                 ? 'bg-button-secondary-bg text-button-secondary-text cursor-not-allowed'
                 : 'bg-button-primary-bg text-button-primary-text hover:bg-button-primary-hover'
             }`}
