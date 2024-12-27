@@ -2,9 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
+/* At top of globals.css */
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/GeistVF.woff') format('woff');
+  font-weight: 100 900;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/fonts/GeistMonoVF.woff') format('woff');
+  font-weight: 100 900;
+  font-style: normal;
+}
+
 /* Theme color palettes */
 :root {
   /* Core color palettes */
+  --font-sans: 'Geist', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Geist Mono', monospace;
+  --font-serif: Palatino, serif;
   --pale-blue-50: #f5f8fe;
   --pale-blue-100: #e8f0fd;
   --pale-blue-200: #d2e0fb;
@@ -253,7 +271,7 @@
 /* Base styles */
 @layer base {
   body {
-    font-family: Palatino, serif;
+    font-family: var(--font-serif);
     background-color: var(--color-background);
     color: var(--color-foreground);
   }

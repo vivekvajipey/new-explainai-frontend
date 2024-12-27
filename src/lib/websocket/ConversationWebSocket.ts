@@ -1,6 +1,5 @@
 // new-explainai-frontend/src/lib/websocket/ConversationWebSocket.ts
 
-import { useConversationStore } from '@/stores/conversationStores';
 import { 
   ConversationResponse,
   ChunkConversationsResponse,
@@ -18,36 +17,33 @@ const WS_BASE_URL = 'wss://explainai-new-528ec8eb814a.herokuapp.com';
 
 export class ConversationWebSocket {
   private ws: WebSocket | null = null;
-  private eventHandlers = new Map<string, Set<MessageHandler<unknown>>>();
-  private pendingMessages: { type: string; data: unknown }[] = [];
-  public isConnected = false;
+  private isConnected = false;
   private connectionPromise: Promise<void> | null = null;
   private reconnectAttempts = 0;
   private readonly maxReconnectAttempts = 2;
   private readonly reconnectDelay = 1000;
-  private readonly token: string | null;
+  private eventHandlers = new Map<string, Set<MessageHandler<unknown>>>();
+  private pendingMessages: { type: string; data: unknown; request_id?: string }[] = [];
+  private requestCounter = 0;
 
-  constructor(private readonly documentId: string, token: string | null = null) {
-    console.log('ConversationWebSocket: Initializing for document', documentId);
-    this.token = token;
+  constructor(
+    private readonly documentId: string,
+    private readonly token: string | null = null,
+  ) {
     this.connectionPromise = this.connect();
-    this.setupMessageHandlers();
   }
 
-  private connect(): Promise<void> {
+  private async connect(): Promise<void> {
+    console.log('ConversationWebSocket: Connecting...');
+    const wsUrl = `${WS_BASE_URL}/api/conversations/stream/${this.documentId}${
+      this.token ? `?token=${this.token.replace('Bearer ', '')}` : ''
+    }`;
+
     return new Promise((resolve, reject) => {
-      console.log('ConversationWebSocket: Connecting...');
-      
-      // Add /api/ to the path and handle token
-      const wsUrl = `${WS_BASE_URL}/api/conversations/stream/${this.documentId}${this.token ? `?token=${this.token.replace('Bearer ', '')}` : ''}`;
-      
-      console.log('Connecting with URL:', wsUrl);
       this.ws = new WebSocket(wsUrl);
 
-      // Connection timeout
       const timeoutId = setTimeout(() => {
         if (this.ws?.readyState !== WebSocket.OPEN) {
-          console.error('ConversationWebSocket: Connection timeout');
           this.ws?.close();
           reject(new Error('Connection timeout'));
           this.handleReconnect();
@@ -55,7 +51,6 @@ export class ConversationWebSocket {
       }, 5000);
 
       this.ws.onopen = () => {
-        console.log('ConversationWebSocket: Connected');
         clearTimeout(timeoutId);
         this.isConnected = true;
         this.reconnectAttempts = 0;
@@ -64,14 +59,12 @@ export class ConversationWebSocket {
       };
 
       this.ws.onclose = () => {
-        console.log('ConversationWebSocket: Connection closed');
         this.isConnected = false;
         this.ws = null;
         this.handleReconnect();
       };
 
       this.ws.onerror = (error) => {
-        console.error('ConversationWebSocket: Connection error', error);
         clearTimeout(timeoutId);
         reject(error);
       };
@@ -79,27 +72,16 @@ export class ConversationWebSocket {
       this.ws.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
-          const { type, data, error } = message;
-
-          console.log('ConversationWebSocket: Received message', { type, data, error });
-
-          if (error) {
-            const errorHandlers = this.eventHandlers.get(`${type}.error`);
-            if (errorHandlers) {
-              errorHandlers.forEach(handler => handler(error));
-            }
-            return;
-          }
-
+          const { type, data, request_id } = message;
+          
           const handlers = this.eventHandlers.get(type);
-          if (handlers && handlers.size > 0) {
-            handlers.forEach(handler => handler(data));
+          if (handlers) {
+            handlers.forEach(handler => handler({ ...data, request_id }));
           } else {
-            console.log('ConversationWebSocket: Queueing message for', type);
-            this.pendingMessages.push({ type, data });
+            this.pendingMessages.push({ type, data, request_id });
           }
         } catch (error) {
-          console.error('ConversationWebSocket: Failed to process message', error);
+          console.error('Failed to process message:', error);
         }
       };
     });
@@ -110,7 +92,7 @@ export class ConversationWebSocket {
       console.error('ConversationWebSocket: Max reconnection attempts reached');
       return;
     }
-
+ 
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts);
     console.log(`ConversationWebSocket: Attempting to reconnect in ${delay}ms...`);
     
@@ -119,112 +101,98 @@ export class ConversationWebSocket {
       this.connectionPromise = this.connect();
     }, delay);
   }
-
-  private setupMessageHandlers() {
-    // Handler for messages list completion
-    this.onMessage<ConversationMessagesCompleted>(
-      'conversation.messages.completed',
-      (data) => {
-        useConversationStore.getState().setMessages(
-          data.conversation_id,
-          data.messages
-            .filter(msg => msg.role !== 'system')
-            .map(msg => ({
-              id: msg.id,
-              role: msg.role as MessageRole,  // Add type assertion here
-              content: msg.content,
-              timestamp: msg.created_at
-            }))
-        );
-      }
-    );
-  }
-
-  private send(type: string, data: unknown): void {
+ 
+  private send(type: string, data: Record<string, unknown>): string {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       throw new Error('WebSocket is not connected');
     }
-
-    const message = JSON.stringify({ type, data });
+ 
+    const request_id = `req_${++this.requestCounter}`;
+    const message = JSON.stringify({ 
+      type, 
+      data: { 
+        ...data, 
+        request_id 
+      } 
+    });
     console.log('ConversationWebSocket: Sending', message);
     this.ws.send(message);
+    return request_id;
   }
-
+ 
   private onMessage<T>(event: string, handler: MessageHandler<T>): void {
     if (!this.eventHandlers.has(event)) {
       this.eventHandlers.set(event, new Set());
     }
     this.eventHandlers.get(event)?.add(handler as MessageHandler<unknown>);
-    console.log('ConversationWebSocket: Registered handler for', event);
   }
-
-  public removeHandler<T>(event: string, handler: MessageHandler<T>): void {
-    this.eventHandlers.get(event)?.delete(handler as MessageHandler<unknown>);
-    if (this.eventHandlers.get(event)?.size === 0) {
-      this.eventHandlers.delete(event);
-    }
-  }
-
+ 
   private processPendingMessages(): void {
-    console.log('ConversationWebSocket: Processing pending messages:', this.pendingMessages.length);
     this.pendingMessages.forEach(message => {
       const handlers = this.eventHandlers.get(message.type);
       if (handlers) {
-        handlers.forEach(handler => handler(message.data));
+        const messageData = typeof message.data === 'object' && message.data !== null
+          ? { ...(message.data as Record<string, unknown>), request_id: message.request_id }
+          : { data: message.data, request_id: message.request_id };
+        handlers.forEach(handler => handler(messageData));
       }
     });
     this.pendingMessages = [];
   }
-
+ 
   private async waitForConnection(): Promise<void> {
     if (this.isConnected) return;
     await this.connectionPromise;
   }
-
+ 
   private async sendAndWait<T>(
     requestType: string,
     responseType: string,
     data: unknown,
     timeout: number = 10000
   ): Promise<T> {
-    console.log("[DEBUG] sendAndWait START:", { requestType, responseType, data });
     await this.waitForConnection();
-  
+ 
     return new Promise((resolve, reject) => {
-      // Store timer reference so we can clear it if we get a successful response or error
+      const request_id = this.send(requestType, this.ensureRecord(data));
       const timer = setTimeout(() => {
-        console.error(`[DEBUG] sendAndWait TIMEOUT for ${responseType}`);
         this.removeHandler(responseType, handler);
         this.removeHandler(`${responseType}.error`, errorHandler);
         reject(new Error(`Timeout waiting for ${responseType}`));
       }, timeout);
-  
-      const handler = (data: T) => {
-        console.log(`[DEBUG] sendAndWait SUCCESS for ${responseType}:`, data);
-        clearTimeout(timer); // Clear timeout on success
-        resolve(data);
-        this.removeHandler(responseType, handler);
-        this.removeHandler(`${responseType}.error`, errorHandler);
+ 
+      const handler = (response: T & { request_id?: string }) => {
+        if (response.request_id === request_id) {
+          clearTimeout(timer);
+          resolve(response);
+          this.removeHandler(responseType, handler);
+          this.removeHandler(`${responseType}.error`, errorHandler);
+        }
       };
-  
+ 
       const errorHandler = (error: WebSocketError) => {
-        console.error(`[DEBUG] sendAndWait ERROR for ${responseType}:`, error);
-        clearTimeout(timer); // Clear timeout on error
-        reject(new Error(error.message || `Failed during ${requestType}`));
-        this.removeHandler(responseType, handler);
-        this.removeHandler(`${responseType}.error`, errorHandler);
+        if (error.request_id === request_id) {
+          clearTimeout(timer);
+          reject(new Error(error.message || `Failed during ${requestType}`));
+          this.removeHandler(responseType, handler);
+          this.removeHandler(`${responseType}.error`, errorHandler);
+        }
       };
-  
+ 
       this.onMessage(responseType, handler);
       this.onMessage(`${responseType}.error`, errorHandler);
-  
-      console.log("[DEBUG] sendAndWait sending:", { requestType, data });
-      this.send(requestType, data);
     });
   }
 
+  private ensureRecord(data: unknown): Record<string, unknown> {
+    if (typeof data === 'object' && data !== null) {
+      return data as Record<string, unknown>;
+    }
+    return { value: data };
+  }
+ 
+  // Public methods for conversation management
   async createMainConversation(): Promise<string> {
-    console.log("[ConversationWebSocket] CALLING createMainConversation!!!");
     const response = await this.sendAndWait<ConversationCreateCompleted>(
       'conversation.main.create',
       'conversation.main.create.completed',
@@ -232,10 +200,10 @@ export class ConversationWebSocket {
     );
     return response.conversation_id;
   }
-
+ 
   async createChunkConversation(
-    chunkId: string, 
-    highlightText: string, 
+    chunkId: string,
+    highlightText: string,
     highlightRange?: { start: number; end: number }
   ): Promise<string> {
     const payload: ChunkConversationPayload = {
@@ -243,11 +211,11 @@ export class ConversationWebSocket {
       chunk_id: chunkId,
       highlight_text: highlightText
     };
-  
+ 
     if (highlightRange) {
       payload.highlight_range = highlightRange;
     }
-  
+ 
     const response = await this.sendAndWait<ConversationCreateCompleted>(
       'conversation.chunk.create',
       'conversation.chunk.create.completed',
@@ -255,11 +223,11 @@ export class ConversationWebSocket {
     );
     return response.conversation_id;
   }
-
+ 
   async sendMessage(
-    conversationId: string, 
-    content: string, 
-    chunkId?: string, 
+    conversationId: string,
+    content: string,
+    chunkId?: string,
     conversationType?: string
   ): Promise<ConversationMessageSendCompleted> {
     return this.sendAndWait<ConversationMessageSendCompleted>(
@@ -271,10 +239,10 @@ export class ConversationWebSocket {
         chunk_id: chunkId,
         conversation_type: conversationType
       },
-      30000 
+      30000
     );
   }
-
+ 
   async sendMessageWithStreaming(
     conversationId: string,
     content: string,
@@ -283,71 +251,66 @@ export class ConversationWebSocket {
     conversationType?: string
   ): Promise<ConversationMessageSendCompleted> {
     await this.waitForConnection();
-
     let fullMessage = '';
     let isComplete = false;
-
-    // Set up streaming handlers
-    const tokenHandler = (data: { token: string }) => {
-      if (!isComplete) {  // Only process tokens before completion
-        fullMessage += data.token;
-        handlers.onToken(fullMessage);
+ 
+    // Generate a request ID for this streaming session
+    const request_id = `req_${++this.requestCounter}`;
+    
+    const tokenHandler = (data: { token: string; request_id?: string }) => {
+      // Only process tokens for our request
+      if (data.request_id === request_id) {
+        console.log('Token received:', data.token);
+        if (!isComplete) {
+          fullMessage += data.token;
+          handlers.onToken(fullMessage);
+        }
       }
     };
-
-    // Add handlers for streaming
+ 
     this.onMessage('chat.token', tokenHandler);
-
+ 
     try {
-      // Send the message and wait for completion
       const response = await this.sendAndWait<ConversationMessageSendCompleted>(
         'conversation.message.send',
         'conversation.message.send.completed',
-        {
+        this.ensureRecord({
           conversation_id: conversationId,
           content,
           chunk_id: chunkId,
-          conversation_type: conversationType
-        },
+          conversation_type: conversationType,
+          request_id
+        }),
         30000
       );
-      
+ 
       isComplete = true;
-      console.log("Token aggregation check:", {
-        aggregatedLength: fullMessage.length,
-        responseLength: response.message.length,
-        isEqual: response.message === fullMessage
-      });
-
-      // Use the longer message to ensure we don't lose content
       const finalMessage = fullMessage.length >= response.message.length ? fullMessage : response.message;
       response.message = finalMessage;
-
       return response;
     } finally {
-      // Clean up handlers
       this.removeHandler('chat.token', tokenHandler);
     }
   }
-
+ 
   async getMessages(conversationId: string): Promise<ConversationResponse> {
     const response = await this.sendAndWait<ConversationMessagesCompleted>(
       'conversation.messages.get',
       'conversation.messages.completed',
       { conversation_id: conversationId }
     );
-
+ 
     return {
       conversation_id: response.conversation_id,
       messages: response.messages.map(msg => ({
         id: msg.id,
-        role: msg.role as MessageRole,  // Add type assertion here
+        role: msg.role as MessageRole,
         content: msg.content,
         timestamp: msg.created_at
       }))
     };
   }
-
+ 
   async getChunkConversations(chunkId: string): Promise<ChunkConversationsResponse> {
     return this.sendAndWait<ChunkConversationsResponse>(
       'conversation.get.by.sequence',
@@ -356,9 +319,13 @@ export class ConversationWebSocket {
       5000
     );
   }
-
-  public async listConversations(): Promise<Record<string, {document_id: string, chunk_id?: number, created_at: string, highlight_text?: string}>> {
-    console.log("[DEBUG] listConversations START");
+ 
+  async listConversations(): Promise<Record<string, {
+    document_id: string,
+    chunk_id?: number,
+    created_at: string,
+    highlight_text?: string
+  }>> {
     const response = await this.sendAndWait<{
       conversations: Record<string, {
         document_id: string,
@@ -371,13 +338,19 @@ export class ConversationWebSocket {
       'conversation.list.completed',
       {}
     );
-    console.log("[DEBUG] listConversations SUCCESS:", response.conversations);
     return response.conversations;
   }
-
+ 
+  removeHandler<T>(event: string, handler: MessageHandler<T>): void {
+    this.eventHandlers.get(event)?.delete(handler as MessageHandler<unknown>);
+    if (this.eventHandlers.get(event)?.size === 0) {
+      this.eventHandlers.delete(event);
+    }
+  }
+ 
   close(): void {
     if (this.ws) {
-      this.ws.onclose = null; // Prevent reconnection
+      this.ws.onclose = null;
       this.ws.close();
       this.ws = null;
     }
@@ -385,4 +358,4 @@ export class ConversationWebSocket {
     this.pendingMessages = [];
     this.isConnected = false;
   }
-}
+ }

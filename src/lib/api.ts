@@ -331,7 +331,6 @@ export class DocumentWebSocket extends BaseWebSocket {
 
   protected connect(): Promise<void> {
     return super.connect().then(() => {
-      // Send initial metadata request after connection
       if (!this.pendingMetadataRequest) {
         this.pendingMetadataRequest = true;
         this.send('document.metadata', { document_id: this.documentId });
@@ -342,6 +341,12 @@ export class DocumentWebSocket extends BaseWebSocket {
   protected handleReconnect() {
     this.pendingMetadataRequest = false;
     super.handleReconnect();
+  }
+
+  // Add method to handle cleanup if needed
+  public removeEventHandlers() {
+    // Implement cleanup logic here
+    this.messageHandlers.clear();
   }
 }
 

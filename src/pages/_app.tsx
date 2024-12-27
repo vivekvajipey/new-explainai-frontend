@@ -1,19 +1,17 @@
-// app/layout.tsx
-'use client';
-
-import React from 'react';
-import "./globals.css";
+// src/pages/_app.tsx
 import { ThemeProvider } from "@/components/theme-provider";
-import { AuthProvider } from "@/lib/auth/AuthContext";
+import { AuthProvider, useAuth } from "@/lib/auth/AuthContext";
 import Script from "next/script";
-import { useAuth } from "@/lib/auth/AuthContext";
-import { useRouter } from "next/navigation";
-import { useSocket } from "@/contexts/SocketContext";
-import { useConversationStore } from "@/stores/conversationStores";
-import Link from 'next/link';
 import { AuthInitializer } from "@/components/header/AuthInitializer";
+import "../styles/globals.css"; 
 import { ThemeToggle } from "@/components/header/ThemeToggle";
+import { useSocket } from "@/contexts/SocketContext";
 import { getUserCost } from "@/lib/api";
+import Link from 'next/link'; 
+import React from "react";
+import type { AppProps } from 'next/app';
+import { useRouter } from "next/router";
+import Head from 'next/head'
 
 function Header() {
   const router = useRouter();
@@ -26,9 +24,6 @@ function Header() {
     if (documentSocket) {
       documentSocket.close();
     }
-    
-    // Clear conversation store
-    useConversationStore.getState().clearAll();
     
     // Log out (clears auth state and localStorage)
     logout();
@@ -128,34 +123,30 @@ function Header() {
   );
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+
+export default function App({ Component, pageProps }: AppProps) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <title>ExplainAI</title>
-        <Script src="https://accounts.google.com/gsi/client" async defer />
-        <link rel="icon" href="/icon.png"/>
-      </head>
-      <body className="font-palatino antialiased bg-background text-foreground">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <AuthProvider>
-            <AuthInitializer />
-            <Header />
-            <main className="container mx-auto px-4 py-8">
-              {children}
-            </main>
-          </AuthProvider>
-        </ThemeProvider>
-      </body>
-    </html>
+    <>
+      <Script src="https://accounts.google.com/gsi/client" async defer />
+      <Head>
+        <title>ExplainAI - Intelligent Document Analysis</title>
+        <meta name="description" content="AI-powered document analysis and conversation platform" />
+        <link rel="icon" href="/book_E_logo.png" />
+      </Head>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="light"
+        enableSystem
+        disableTransitionOnChange
+      >
+        <AuthProvider>
+          <AuthInitializer />
+          <Header />
+          <main className="container mx-auto px-4 py-8">
+            <Component {...pageProps} />
+          </main>
+        </AuthProvider>
+      </ThemeProvider>
+    </>
   );
 }

@@ -1,22 +1,20 @@
-// src/components/document/DocumentContent.tsx
-import React, { useState, useCallback, useMemo, ReactElement } from 'react';
-import { useConversationStore } from '@/stores/conversationStores';
-import { SelectionTooltip } from './SelectionTooltip';
+import { useState, useCallback, useMemo, ReactElement } from "react";
+import { SelectionTooltip } from "./SelectionTooltip";
+import { Highlight } from "./types";
 
 interface DocumentContentProps {
   content: string;
-  chunkId: string;
-  onHighlightClick: (conversationId: string) => void;
+  highlights: Highlight[];
   onCreateHighlight: (text: string, range: { start: number; end: number }) => void;
+  onHighlightClick: (conversationId: string) => void;
 }
 
-export function DocumentContent({ 
-  content, 
-  chunkId, 
+export function DocumentContent({
+  content,
+  highlights,
+  onCreateHighlight,
   onHighlightClick,
-  onCreateHighlight 
 }: DocumentContentProps) {
-  const highlights = useConversationStore(state => state.getHighlightsForChunk(chunkId));
   const [selection, setSelection] = useState<{
     text: string;
     range: { start: number; end: number };
@@ -33,7 +31,6 @@ export function DocumentContent({
     const range = selected.getRangeAt(0);
     const startSpan = range.startContainer.parentElement;
     const startIndex = startSpan?.getAttribute('data-index');
-    
     if (!startIndex) return;
 
     const startOffset = parseInt(startIndex) + range.startOffset;
@@ -56,7 +53,7 @@ export function DocumentContent({
   const renderedContent = useMemo(() => {
     let lastIndex = 0;
     const elements: ReactElement[] = [];
-    
+
     highlights.forEach((highlight) => {
       if (highlight.startOffset > lastIndex) {
         elements.push(
@@ -73,15 +70,15 @@ export function DocumentContent({
       elements.push(
         <span
           key={highlight.id}
-          className="bg-doc-highlight-bg border border-doc-highlight-border text-doc-highlight-text 
-                   group cursor-pointer transition-colors"
+          className="bg-doc-highlight-bg border border-doc-highlight-border text-doc-highlight-text
+            group cursor-pointer transition-colors"
           onClick={() => onHighlightClick(highlight.conversationId)}
           data-index={highlight.startOffset}
         >
           {content.slice(highlight.startOffset, highlight.endOffset)}
-          <span className="invisible group-hover:visible absolute -top-6 left-1/2 
-                         -translate-x-1/2 bg-tooltip-bg text-tooltip-text border border-tooltip-border
-                         px-2 py-1 rounded text-sm whitespace-nowrap shadow-sm">
+          <span className="invisible group-hover:visible absolute -top-6 left-1/2
+            -translate-x-1/2 bg-tooltip-bg text-tooltip-text border border-tooltip-border
+            px-2 py-1 rounded text-sm whitespace-nowrap shadow-sm">
             Click to open chat
           </span>
         </span>
@@ -107,7 +104,7 @@ export function DocumentContent({
 
   return (
     <div className="bg-doc-bg">
-      <div 
+      <div
         className="prose max-w-none p-6"
         onMouseUp={handleTextSelection}
       >
@@ -115,7 +112,6 @@ export function DocumentContent({
           {renderedContent}
         </pre>
       </div>
-      
       <SelectionTooltip
         position={selection?.position ?? null}
         onChatClick={() => {

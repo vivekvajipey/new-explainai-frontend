@@ -1,3 +1,5 @@
+// src/components/conversation/MessageList/types.ts
+
 import { Message } from "@/types/conversation";
 
 export interface MessageListProps {

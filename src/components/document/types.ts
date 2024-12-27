@@ -22,3 +22,12 @@ export interface DocumentMetadata {
 export interface DocumentMetadataResponse {
     document: DocumentMetadata;
   }
+
+export interface Highlight {
+  id: string;
+  text: string;
+  startOffset: number;
+  endOffset: number;
+  conversationId: string;
+  chunkId: string;
+}

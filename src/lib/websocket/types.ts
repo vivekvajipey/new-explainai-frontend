@@ -1,4 +1,4 @@
-// new-explainai-frontend/src/lib/websocket/ConversationWebSocket.ts
+// new-explainai-frontend/src/lib/websocket/types.ts
 
 import { MessageRole } from "@/types/conversation";
 
@@ -37,26 +37,31 @@ export interface ChunkConversationsResponse {
 
 export interface MessageSendError {
   message: string;
+  request_id?: string;
 }
 
 export interface ConversationCreateCompleted {
   conversation_id: string;
+  request_id?: string;
 }
 
 export interface ConversationCreateError {
   message: string;
+  request_id?: string;
 }
 
 export type MessageHandler<T = unknown> = (data: T) => void;
 
 export interface WebSocketError {
   message: string;
+  request_id?: string;
 }
 
 export interface ConversationMessageSendCompleted {
   message: string;
   conversation_id: string;
   user_message_id: string;
+  request_id?: string;
 }
 
 export interface ConversationMessagesCompleted {
@@ -67,6 +72,7 @@ export interface ConversationMessagesCompleted {
     content: string;
     created_at: string;
   }>;
+  request_id?: string;
 }
 
 export interface ConversationChunkGetCompleted {
@@ -74,17 +80,19 @@ export interface ConversationChunkGetCompleted {
     chunk_id: string;
     highlight_text: string;
   }>;
+  request_id?: string;
 }
 
 export interface WebSocketMessage {
   type: string;
-  data: unknown;
+  data: Record<string, unknown>;
+  request_id?: string;
 }
 
 export interface StreamingMessageHandlers {
-  onToken: (fullMessage: string) => void;
-  onComplete: (message: string) => void;
-  onError: (error: string) => void;
+  onToken: (partialMessage: string) => void;
+  onComplete?: () => void;
+  onError?: (error: Error) => void;
 }
 
 export interface ChunkConversationPayload {
@@ -92,4 +100,5 @@ export interface ChunkConversationPayload {
   chunk_id: string;
   highlight_text: string;
   highlight_range?: { start: number; end: number };
+  request_id?: string;
 }

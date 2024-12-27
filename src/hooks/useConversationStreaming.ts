@@ -1,107 +1,80 @@
 // hooks/useConversationStreaming.ts
-
-import { useState, useRef } from 'react';
-import { Message } from '@/types/conversation';
+import { Message, StreamingState, MessageSendConfig } from '@/types/conversation';
 import { ConversationWebSocket } from '@/lib/websocket/ConversationWebSocket';
-
-interface StreamingState {
-  id: string | null;
-  isStreaming: boolean;
-  content: string;
-}
-
-interface MessageSendConfig {
-  type: 'main' | 'highlight';
-  chunkId: string;
-  highlightText?: string;
-}
 
 export function useConversationStreaming(
   conversationId: string,
-  addMessage: (conversationId: string, message: Message) => void,
-  conversationSocket: ConversationWebSocket | null
+  onMessageComplete: (message: Message) => void,
+  socket: ConversationWebSocket | null,
+  setParentStreamingState: (state: StreamingState) => void,
+  replaceMessage: (message: Message) => void  // New parameter
 ) {
-  const [streamingState, setStreamingState] = useState<StreamingState>({
-    id: null,
-    isStreaming: false,
-    content: ''
-  });
-  const accumulatedContentRef = useRef<string>('');
-
   const handleStreamingMessage = async (
     content: string,
     config: MessageSendConfig
   ) => {
-    if (!conversationSocket?.isConnected) {
-      throw new Error('WebSocket is not connected');
+    if (!socket) {
+      throw new Error('WebSocket not connected');
     }
 
-    const messageId = `streaming-${Date.now()}`;
-    accumulatedContentRef.current = '';
-    
-    setStreamingState({
-      id: messageId,
+    // Start streaming
+    setParentStreamingState({
+      id: conversationId,
       isStreaming: true,
       content: ''
     });
 
-    // Add initial empty assistant message
-    addMessage(conversationId, {
-      id: messageId,
-      role: 'assistant',
-      content: '',
-      timestamp: new Date().toISOString()
-    });
-
     try {
-      const response = await conversationSocket.sendMessageWithStreaming(
+      const response = await socket.sendMessageWithStreaming(
         conversationId,
         content,
         {
-          onToken: (fullMessage: string) => {
-            accumulatedContentRef.current = fullMessage;
-            setStreamingState(prev => ({
-              ...prev,
-              content: fullMessage
-            }));
-            addMessage(conversationId, {
-              id: messageId,
-              role: 'assistant',
-              content: fullMessage,
-              timestamp: new Date().toISOString()
+          onToken: (partialMessage: string) => {
+            console.log('Setting streaming state:', partialMessage);
+            setParentStreamingState({
+              id: conversationId,  // <- Let's log this
+              isStreaming: true,
+              content: partialMessage
             });
+            console.log('Setting streaming with conversationId:', conversationId);
           },
           onComplete: () => {
-            const finalContent = accumulatedContentRef.current;
-            addMessage(conversationId, {
-              id: messageId,
-              role: 'assistant',
-              content: finalContent,
-              timestamp: new Date().toISOString()
+            setParentStreamingState({
+              id: conversationId,
+              isStreaming: false,
+              content: ''
             });
           },
-          onError: (error: string) => {
-            throw new Error(error);
+          onError: (error: Error) => {
+            console.error('Streaming error:', error);
+            setParentStreamingState({
+              id: conversationId,
+              isStreaming: false,
+              content: ''
+            });
           }
         },
         config.chunkId,
         config.type
       );
 
-      return response;
-
+      // Add completed message
+      replaceMessage({
+        id: response.user_message_id,
+        role: 'assistant',
+        content: response.message,
+        timestamp: new Date().toISOString()
+      });
     } finally {
-      setStreamingState({
-        id: null,
+      setParentStreamingState({
+        id: conversationId,
         isStreaming: false,
         content: ''
       });
-      accumulatedContentRef.current = '';
     }
   };
 
   return {
-    streamingState,
     handleStreamingMessage
   };
 }
