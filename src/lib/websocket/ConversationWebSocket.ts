@@ -8,7 +8,6 @@ import {
   ConversationCreateCompleted,
   ConversationMessageSendCompleted,
   ConversationMessagesCompleted,
-  StreamingMessageHandlers,
   ChunkConversationPayload
 } from './types';
 import { MessageRole } from '@/types/conversation';  // This line is already correct
@@ -73,11 +72,18 @@ export class ConversationWebSocket {
         try {
           const message = JSON.parse(event.data);
           const { type, data, request_id } = message;
+          console.log('WebSocket received message:', { type, data, request_id });
           
           const handlers = this.eventHandlers.get(type);
           if (handlers) {
-            handlers.forEach(handler => handler({ ...data, request_id }));
+            console.log('Found handlers for type:', type);
+            // Pass both the data and request_id to handlers
+            handlers.forEach(handler => {
+              console.log('Calling handler with:', { ...data, request_id });
+              handler({ ...data, request_id });
+            });
           } else {
+            console.log('No handlers found for type:', type);
             this.pendingMessages.push({ type, data, request_id });
           }
         } catch (error) {
@@ -246,50 +252,50 @@ export class ConversationWebSocket {
   async sendMessageWithStreaming(
     conversationId: string,
     content: string,
-    handlers: StreamingMessageHandlers,
+    handlers: {
+      onToken: (message: string) => void;
+      onComplete: () => void;
+      onError: (error: Error) => void;
+    },
     chunkId?: string,
-    conversationType?: string
+    conversationType: string = 'main'
   ): Promise<ConversationMessageSendCompleted> {
     await this.waitForConnection();
     let fullMessage = '';
     let isComplete = false;
  
-    // Generate a request ID for this streaming session
-    const request_id = `req_${++this.requestCounter}`;
-    
+    // Set up token handler BEFORE sending message
     const tokenHandler = (data: { token: string; request_id?: string }) => {
-      // Only process tokens for our request
-      if (data.request_id === request_id) {
-        console.log('Token received:', data.token);
-        if (!isComplete) {
-          fullMessage += data.token;
-          handlers.onToken(fullMessage);
-        }
+      console.log('Token received:', data.token);
+      if (!isComplete) {
+        fullMessage += data.token;
+        handlers.onToken(fullMessage);
       }
     };
- 
+
     this.onMessage('chat.token', tokenHandler);
  
     try {
+      // Send the message
       const response = await this.sendAndWait<ConversationMessageSendCompleted>(
         'conversation.message.send',
         'conversation.message.send.completed',
-        this.ensureRecord({
+        {
           conversation_id: conversationId,
           content,
           chunk_id: chunkId,
-          conversation_type: conversationType,
-          request_id
-        }),
-        30000
+          conversation_type: conversationType
+        }
       );
- 
+
       isComplete = true;
-      const finalMessage = fullMessage.length >= response.message.length ? fullMessage : response.message;
-      response.message = finalMessage;
-      return response;
-    } finally {
+      handlers.onComplete();
       this.removeHandler('chat.token', tokenHandler);
+      return response;
+    } catch (error) {
+      handlers.onError(error as Error);
+      this.removeHandler('chat.token', tokenHandler);
+      throw error;
     }
   }
  
