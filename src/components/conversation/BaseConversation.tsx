@@ -125,8 +125,8 @@ export default function BaseConversation({
   }
 
   return (
-    <div className={`flex flex-col h-[500px] ${className}`}>
-      <MessageList 
+    <div className={`flex flex-col h-full ${className}`}>
+      <MessageList
         messages={messages}
         streamingState={streamingState}
         error={error}

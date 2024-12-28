@@ -103,9 +103,9 @@ export function DocumentContent({
   }, [content, highlights, onHighlightClick]);
 
   return (
-    <div className="bg-doc-bg">
+    <div className="flex-1 overflow-y-auto">
       <div
-        className="prose max-w-none p-6"
+        className="prose max-w-none p-6 h-full"
         onMouseUp={handleTextSelection}
       >
         <pre className="whitespace-pre-wrap font-palatino text-doc-text bg-transparent m-0 p-0">
