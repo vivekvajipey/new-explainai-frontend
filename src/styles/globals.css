@@ -126,6 +126,7 @@
   --color-tooltip-bg: white;
   --color-tooltip-text: var(--muted-blue-800);
   --color-tooltip-border: var(--pale-blue-200);
+  --color-tooltip-hover: var(--pale-blue-100);
   
   --color-accent: var(--muted-blue-200);
   --color-success: var(--pale-green-500);
@@ -165,8 +166,8 @@
   --color-document-code-background: var(--pale-blue-50);
   --color-highlight-background: var(--pale-yellow-200);
   --color-highlight-hover: var(--pale-yellow-300);
-  --color-tooltip-background: var(--muted-blue-800);
-  --color-tooltip-text: var(--pale-blue-50);
+  /* --color-tooltip-background: var(--muted-blue-800); */
+  /* --color-tooltip-text: var(--pale-blue-50); */
 
   /* Border styles */
   --border-radius-lg: 0.75rem;
@@ -225,6 +226,7 @@
   --color-tooltip-bg: var(--muted-blue-800);
   --color-tooltip-text: var(--pale-blue-100);
   --color-tooltip-border: var(--muted-blue-700);
+  --color-tooltip-hover: var(--pale-blue-100);
   
   --color-accent: var(--muted-blue-300);
   --color-success: var(--pale-green-400);
@@ -264,8 +266,8 @@
   --color-document-code-background: var(--muted-blue-900);
   --color-highlight-background: var(--pale-yellow-900);
   --color-highlight-hover: var(--pale-yellow-800);
-  --color-tooltip-background: var(--pale-blue-800);
-  --color-tooltip-text: var(--pale-blue-50);
+  /* --color-tooltip-background: var(--pale-blue-800); */
+  /* --color-tooltip-text: var(--pale-blue-50); */
 }
 
 /* Base styles */
