@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, PanelRightClose, PanelRightOpen } from "lucide-react";
 
 // src/components/document/DocumentHeader.tsx
 interface DocumentHeaderProps {
@@ -7,6 +7,8 @@ interface DocumentHeaderProps {
   totalChunks: number;
   onPrevious: () => void;
   onNext: () => void;
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
 export function DocumentHeader({
@@ -15,6 +17,8 @@ export function DocumentHeader({
   totalChunks,
   onPrevious,
   onNext,
+  isCollapsed,
+  onToggleCollapse,
 }: DocumentHeaderProps) {
   return (
     <div className="mb-6">
@@ -35,6 +39,8 @@ export function DocumentHeader({
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
+
+          {/* Chunk Changing */}
           <button
             onClick={onNext}
             disabled={currentChunk === totalChunks}
@@ -45,6 +51,18 @@ export function DocumentHeader({
             }`}
           >
             <ChevronRight className="w-5 h-5" />
+          </button>
+
+          {/* Conversation Collapse Toggle */}
+          <button
+            onClick={onToggleCollapse}
+            className="p-2 rounded-lg transition-colors text-doc-nav-button hover:bg-doc-nav-button-hover"
+          >
+            {isCollapsed ? (
+              <PanelRightOpen className="w-5 h-5" />
+            ) : (
+              <PanelRightClose className="w-5 h-5" />
+            )}
           </button>
         </div>
       </div>

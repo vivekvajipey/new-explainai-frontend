@@ -19,6 +19,7 @@ export function DocumentPage({ documentId }: { documentId: string }) {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const { mainConversationId, error: mainError } = useMainConversation(documentId);
 
+  const [isConversationCollapsed, setIsConversationCollapsed] = useState(false);
 
   const { conversationSocket, documentSocket } = useSocket();
 
@@ -67,6 +68,8 @@ export function DocumentPage({ documentId }: { documentId: string }) {
     range: { start: number; end: number }
   ) => {
     if (!conversationSocket) return;
+
+    setIsConversationCollapsed(false);
     
     try {
       const conversationId = await conversationSocket.createChunkConversation(
@@ -100,6 +103,7 @@ export function DocumentPage({ documentId }: { documentId: string }) {
   }, [conversationSocket, currentChunkIndex]);
 
   const handleHighlightClick = useCallback((conversationId: string) => {
+    setIsConversationCollapsed(false);
     setActiveConversationId(conversationId);
     // Could add:
     // - Validation that the conversation exists
@@ -130,7 +134,7 @@ export function DocumentPage({ documentId }: { documentId: string }) {
 
   return (
     <div className="flex h-screen">
-      <div className="w-1/2">
+      <div className={`transition-all duration-300 ${isConversationCollapsed ? 'w-full' : 'w-1/2'}`}>
         <DocumentViewer
           chunk={currentChunk}
           highlights={currentHighlights}
@@ -140,9 +144,15 @@ export function DocumentPage({ documentId }: { documentId: string }) {
           currentChunkIndex={currentChunkIndex}
           totalChunks={metadata.meta_data.chunks_count}
           documentTitle={metadata.title}
+          isCollapsed={isConversationCollapsed}
+          onToggleCollapse={() => setIsConversationCollapsed(!isConversationCollapsed)}
         />
       </div>
-      <div className="w-1/2">
+      <div 
+        className={`transition-all duration-300 ${
+          isConversationCollapsed ? 'w-0 overflow-hidden' : 'w-1/2'
+        }`}
+      >
         <ConversationContainer 
           documentId={documentId}
           currentSequence={currentChunk.sequence.toString()}

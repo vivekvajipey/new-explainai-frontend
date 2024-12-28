@@ -6,7 +6,7 @@ import { DocumentChunk, Highlight } from "./types";
 
 
 interface DocumentViewerProps {
-  chunk: DocumentChunk;  // We'll need to define this type
+  chunk: DocumentChunk;
   highlights: Highlight[];
   onCreateHighlight: (text: string, range: { start: number; end: number }) => void;
   onHighlightClick: (conversationId: string) => void;
@@ -14,6 +14,8 @@ interface DocumentViewerProps {
   currentChunkIndex: number;
   totalChunks: number;
   documentTitle: string;
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
 export function DocumentViewer({
@@ -24,7 +26,9 @@ export function DocumentViewer({
   onChunkChange,
   currentChunkIndex,
   totalChunks,
-  documentTitle
+  documentTitle,
+  isCollapsed,
+  onToggleCollapse
 }: DocumentViewerProps) {
   return (
     <div className="flex flex-col h-full">
@@ -34,6 +38,8 @@ export function DocumentViewer({
         totalChunks={totalChunks}
         onPrevious={() => onChunkChange(currentChunkIndex - 1)}
         onNext={() => onChunkChange(currentChunkIndex + 1)}
+        isCollapsed={isCollapsed}
+        onToggleCollapse={onToggleCollapse}
       />
       <DocumentContent
         content={chunk.content}
