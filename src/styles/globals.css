@@ -166,8 +166,6 @@
   --color-document-code-background: var(--pale-blue-50);
   --color-highlight-background: var(--pale-yellow-200);
   --color-highlight-hover: var(--pale-yellow-300);
-  /* --color-tooltip-background: var(--muted-blue-800); */
-  /* --color-tooltip-text: var(--pale-blue-50); */
 
   /* Border styles */
   --border-radius-lg: 0.75rem;
@@ -266,8 +264,6 @@
   --color-document-code-background: var(--muted-blue-900);
   --color-highlight-background: var(--pale-yellow-900);
   --color-highlight-hover: var(--pale-yellow-800);
-  /* --color-tooltip-background: var(--pale-blue-800); */
-  /* --color-tooltip-text: var(--pale-blue-50); */
 }
 
 /* Base styles */

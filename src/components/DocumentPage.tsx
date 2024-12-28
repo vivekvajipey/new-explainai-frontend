@@ -130,7 +130,7 @@ export function DocumentPage({ documentId }: { documentId: string }) {
 
   return (
     <div className="flex h-screen">
-      <div className="w-1/2 border-r border-doc-border">
+      <div className="w-1/2">
         <DocumentViewer
           chunk={currentChunk}
           highlights={currentHighlights}
