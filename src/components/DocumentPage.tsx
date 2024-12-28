@@ -2,22 +2,33 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { DocumentViewer } from '@/components/document/DocumentViewer';
-import { ConversationTabs } from '@/components/conversation/ConversationTabs';
+import { ConversationContainer } from '@/components/conversation/ConversationContainer';
 import { useSocket } from '@/contexts/SocketContext';
 import { DocumentMetadata, DocumentMetadataResponse, Highlight } from '@/components/document/types';
+import { useMainConversation } from '@/hooks/useMainConversation';
 
 export function DocumentPage({ documentId }: { documentId: string }) {
-  // Your existing component code, but replace all params.id with documentId
+  // Core document state
   const [metadata, setMetadata] = useState<DocumentMetadata | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Shared state between document and conversations
   const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
   const [highlights, setHighlights] = useState<Map<string, Highlight[]>>(new Map());
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { mainConversationId, error: mainError } = useMainConversation(documentId);
+
 
   const { conversationSocket, documentSocket } = useSocket();
 
-  // Listen for metadata updates from WebSocket
+  useEffect(() => {
+    if (mainConversationId) {
+      setActiveConversationId(mainConversationId);
+    }
+  }, [mainConversationId]);
+
+  // Document metadata loading
   useEffect(() => {
     if (!documentSocket) return;
 
@@ -35,33 +46,20 @@ export function DocumentPage({ documentId }: { documentId: string }) {
       setIsLoading(false);
     };
 
-    // Register handlers
     documentSocket.onMessage('document.metadata.completed', handleMetadata);
     documentSocket.onMessage('document.metadata.error', handleError);
 
-    // No need for removeHandler if not provided by DocumentWebSocket
     return () => {
-      // If you need cleanup, you might need to add a method to DocumentWebSocket
-      // or handle it differently
+      // Cleanup if needed
     };
   }, [documentSocket]);
 
   // Handle chunk changes
   const handleChunkChange = useCallback((newIndex: number) => {
-    if (!metadata) return;
-    
-    if (newIndex >= 0 && newIndex < metadata.chunks.length) {
-      setCurrentChunkIndex(newIndex);
-      
-      // Reset active conversation if it's a highlight conversation
-      setActiveConversationId(prevId => {
-        if (!prevId) return null;
-        const currentHighlights = highlights.get(currentChunkIndex.toString()) || [];
-        const isHighlightConversation = currentHighlights.some(h => h.conversationId === prevId);
-        return isHighlightConversation ? null : prevId;
-      });
-    }
-  }, [metadata, highlights, currentChunkIndex]);
+    if (!metadata || newIndex < 0 || newIndex >= metadata.chunks.length) return;
+    setCurrentChunkIndex(newIndex);
+    setActiveConversationId(mainConversationId); // Always reset to main conversation
+  }, [metadata, mainConversationId]);
 
   // Handle highlight creation
   const handleHighlightCreate = useCallback(async (
@@ -70,18 +68,13 @@ export function DocumentPage({ documentId }: { documentId: string }) {
   ) => {
     if (!conversationSocket) return;
     
-    setIsLoading(true);
-    setError(null);
-
     try {
-      // Create conversation first
       const conversationId = await conversationSocket.createChunkConversation(
         currentChunkIndex.toString(),
         text,
         range
       );
 
-      // Then create highlight
       const newHighlight: Highlight = {
         id: `highlight-${Date.now()}`,
         text,
@@ -99,19 +92,25 @@ export function DocumentPage({ documentId }: { documentId: string }) {
         );
       });
 
-      // Set this as active conversation
       setActiveConversationId(conversationId);
     } catch (error) {
       console.error('Failed to create highlight conversation:', error);
       setError('Failed to create highlight');
-    } finally {
-      setIsLoading(false);
     }
   }, [conversationSocket, currentChunkIndex]);
 
   const handleHighlightClick = useCallback((conversationId: string) => {
     setActiveConversationId(conversationId);
+    // Could add:
+    // - Validation that the conversation exists
+    // - Error handling
+    // - Analytics/tracking
+    // - Any UI feedback or side effects
   }, []);
+
+  if (!mainConversationId) {
+    return <div>Loading conversations...</div>;
+  }
 
   // Loading and error states
   if (isLoading && !metadata) {
@@ -144,11 +143,13 @@ export function DocumentPage({ documentId }: { documentId: string }) {
         />
       </div>
       <div className="w-1/2">
-        <ConversationTabs
+        <ConversationContainer 
           documentId={documentId}
           currentSequence={currentChunk.sequence.toString()}
           activeConversationId={activeConversationId}
           onConversationChange={setActiveConversationId}
+          mainConversationId={mainConversationId}
+          mainError={mainError}
         />
       </div>
     </div>

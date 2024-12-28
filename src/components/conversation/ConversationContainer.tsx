@@ -1,5 +1,4 @@
 import { useChunkConversations } from "@/hooks/useChunkConversation";
-import { useMainConversation } from "@/hooks/useMainConversation";
 import { useActiveConversation } from "@/hooks/useActiveConversation";
 import { ConversationTabList } from "./ConversationTabList";
 import { ConversationContent } from "./ConversationContent";
@@ -7,25 +6,26 @@ import { ConversationContent } from "./ConversationContent";
 interface ConversationContainerProps {
   documentId: string;
   currentSequence: string;
+  activeConversationId: string | null;
+  onConversationChange: (id: string | null) => void;
+  mainConversationId: string;
+  mainError?: string | null;
 }
 
 export function ConversationContainer({
   documentId,
   currentSequence,
+  activeConversationId,
+  onConversationChange,
+  mainConversationId,
+  mainError
 }: ConversationContainerProps) {
-  const { mainConversationId, error: mainError } = useMainConversation(documentId);
   const { chunkConversations } = useChunkConversations(currentSequence);
-  
-  const {
+  const activeConversation = useActiveConversation(
     activeConversationId,
-    activeConversation,
-    setActiveConversationId
-  } = useActiveConversation(mainConversationId, chunkConversations);
-
-  // Loading state
-  if (!mainConversationId) {
-    return <div>Loading conversations...</div>;
-  }
+    mainConversationId,
+    chunkConversations
+  );
 
   return (
     <div className="flex flex-col h-full bg-doc-content-bg border border-doc-content-border rounded-lg shadow-sm">
@@ -33,7 +33,7 @@ export function ConversationContainer({
         mainConversationId={mainConversationId}
         chunkConversations={chunkConversations}
         activeConversationId={activeConversationId}
-        onConversationChange={setActiveConversationId}
+        onConversationChange={onConversationChange}
       />
       
       {mainError && (

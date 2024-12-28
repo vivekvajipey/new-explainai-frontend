@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { ActiveConversationType } from '@/components/conversation/types';
 
 export type RawChunkConversation = {
@@ -8,39 +7,34 @@ export type RawChunkConversation = {
 };
 
 /**
- * Hook to manage the active conversation state and logic
+ * Hook to compute active conversation details based on ID
+ * @param activeConversationId - Current active conversation ID
  * @param mainConversationId - ID of the main conversation
  * @param chunkConversations - Array of chunk conversations
- * @returns Object containing active conversation state and setter
+ * @returns Active conversation object
  */
 export function useActiveConversation(
+  activeConversationId: string | null,
   mainConversationId: string | null,
   chunkConversations: RawChunkConversation[]
-) {
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(
-    mainConversationId ?? null
-  );
+): ActiveConversationType | null {
+  if (!mainConversationId) {
+    return null;
+  }
 
-  // Compute current active conversation
-  const activeConversation: ActiveConversationType | null = mainConversationId ? (
-    activeConversationId === mainConversationId 
-      ? { type: 'main', id: mainConversationId }
-      : (() => {
-          const chunkConv = chunkConversations.find(conv => conv.id === activeConversationId);
-          return chunkConv
-            ? {
-                type: 'chunk',
-                id: chunkConv.id,
-                highlightText: chunkConv.highlightText,
-                chunkId: chunkConv.chunkId
-              }
-            : null;
-        })()
-  ) : null;
+  if (activeConversationId === mainConversationId) {
+    return { type: 'main', id: mainConversationId };
+  }
 
-  return {
-    activeConversationId,
-    activeConversation,
-    setActiveConversationId,
-  };
+  const chunkConv = chunkConversations.find(conv => conv.id === activeConversationId);
+  if (chunkConv) {
+    return {
+      type: 'chunk',
+      id: chunkConv.id,
+      highlightText: chunkConv.highlightText,
+      chunkId: chunkConv.chunkId
+    };
+  }
+
+  return null;
 }
