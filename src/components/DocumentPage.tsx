@@ -4,24 +4,27 @@ import { useState, useCallback, useEffect } from 'react';
 import { DocumentViewer } from '@/components/document/DocumentViewer';
 import { ConversationContainer } from '@/components/conversation/ConversationContainer';
 import { useSocket } from '@/contexts/SocketContext';
-import { DocumentMetadata, DocumentMetadataResponse, Highlight } from '@/components/document/types';
+import { DocumentMetadata, DocumentMetadataResponse } from '@/components/document/types';
 import { useMainConversation } from '@/hooks/useMainConversation';
+import { useChunkConversations } from '@/hooks/useChunkConversation'; // Import the new hook
+import { Highlight } from '@/components/document/types'; // Import Highlight type
 
 export function DocumentPage({ documentId }: { documentId: string }) {
   // Core document state
   const [metadata, setMetadata] = useState<DocumentMetadata | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  
-  // Shared state between document and conversations
   const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
-  const [highlights, setHighlights] = useState<Map<string, Highlight[]>>(new Map());
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [lastCreatedConversationId, setLastCreatedConversationId] = useState<string | null>(null);
   const { mainConversationId, error: mainError } = useMainConversation(documentId);
 
   const [isConversationCollapsed, setIsConversationCollapsed] = useState(false);
 
   const { conversationSocket, documentSocket } = useSocket();
+
+  // Calculate current chunk
+  const currentChunk = metadata?.chunks[currentChunkIndex];
 
   useEffect(() => {
     if (mainConversationId) {
@@ -55,12 +58,37 @@ export function DocumentPage({ documentId }: { documentId: string }) {
     };
   }, [documentSocket]);
 
+  // Get conversations and highlights for current chunk
+  const { 
+    chunkConversations, 
+    highlights: currentHighlights,
+    error: conversationsError 
+  }: { 
+    chunkConversations: { id: string; highlightText: string; chunkId: string }[], 
+    highlights: Highlight[],
+    error: string | null 
+  } = useChunkConversations(
+    currentChunk?.sequence.toString() ?? "0",
+    lastCreatedConversationId
+  );
+
+  // Reset lastCreatedConversationId after fetch
+  useEffect(() => {
+    if (lastCreatedConversationId) {
+      setLastCreatedConversationId(null);
+    }
+  }, [lastCreatedConversationId]);
+
+  // Set error state if there's an error from either source
+  useEffect(() => {
+    setError(conversationsError || mainError || null);
+  }, [conversationsError, mainError]);
+
   // Handle chunk changes
   const handleChunkChange = useCallback((newIndex: number) => {
     if (!metadata || newIndex < 0 || newIndex >= metadata.chunks.length) return;
     setCurrentChunkIndex(newIndex);
-    setActiveConversationId(mainConversationId); // Always reset to main conversation
-  }, [metadata, mainConversationId]);
+  }, [metadata]);
 
   // Handle highlight creation
   const handleHighlightCreate = useCallback(async (
@@ -77,24 +105,7 @@ export function DocumentPage({ documentId }: { documentId: string }) {
         text,
         range
       );
-
-      const newHighlight: Highlight = {
-        id: `highlight-${Date.now()}`,
-        text,
-        startOffset: range.start,
-        endOffset: range.end,
-        conversationId,
-        chunkId: currentChunkIndex.toString()
-      };
-
-      setHighlights(prev => {
-        const chunkHighlights = prev.get(currentChunkIndex.toString()) || [];
-        return new Map(prev).set(
-          currentChunkIndex.toString(),
-          [...chunkHighlights, newHighlight]
-        );
-      });
-
+      setLastCreatedConversationId(conversationId);
       setActiveConversationId(conversationId);
     } catch (error) {
       console.error('Failed to create highlight conversation:', error);
@@ -121,16 +132,13 @@ export function DocumentPage({ documentId }: { documentId: string }) {
     return <div className="flex items-center justify-center h-screen">Loading document...</div>;
   }
 
-  if (error || !metadata) {
+  if (error || !metadata || !currentChunk) {
     return (
       <div className="flex items-center justify-center h-screen text-error">
         Error: {error || 'Failed to load document'}
       </div>
     );
   }
-
-  const currentChunk = metadata.chunks[currentChunkIndex];
-  const currentHighlights = highlights.get(currentChunkIndex.toString()) || [];
 
   return (
     <div className="flex h-screen">
@@ -155,11 +163,12 @@ export function DocumentPage({ documentId }: { documentId: string }) {
       >
         <ConversationContainer 
           documentId={documentId}
-          currentSequence={currentChunk.sequence.toString()}
+          currentSequence={currentChunk && currentChunk.sequence.toString()}
           activeConversationId={activeConversationId}
           onConversationChange={setActiveConversationId}
           mainConversationId={mainConversationId}
           mainError={mainError}
+          chunkConversations={chunkConversations}
         />
       </div>
     </div>

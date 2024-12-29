@@ -1,4 +1,3 @@
-import { useChunkConversations } from "@/hooks/useChunkConversation";
 import { useActiveConversation } from "@/hooks/useActiveConversation";
 import { ConversationTabList } from "./ConversationTabList";
 import { ConversationContent } from "./ConversationContent";
@@ -10,6 +9,11 @@ interface ConversationContainerProps {
   onConversationChange: (id: string | null) => void;
   mainConversationId: string;
   mainError?: string | null;
+  chunkConversations: {
+    id: string;
+    highlightText: string;
+    chunkId: string;
+  }[];
 }
 
 export function ConversationContainer({
@@ -18,9 +22,9 @@ export function ConversationContainer({
   activeConversationId,
   onConversationChange,
   mainConversationId,
-  mainError
+  mainError,
+  chunkConversations
 }: ConversationContainerProps) {
-  const { chunkConversations } = useChunkConversations(currentSequence);
   const activeConversation = useActiveConversation(
     activeConversationId,
     mainConversationId,

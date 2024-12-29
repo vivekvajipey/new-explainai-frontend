@@ -54,15 +54,22 @@ export function DocumentContent({
     let lastIndex = 0;
     const elements: ReactElement[] = [];
 
-    highlights.forEach((highlight) => {
-      if (highlight.startOffset > lastIndex) {
+    // Sort highlights by startOffset to ensure correct rendering order
+    const sortedHighlights = [...highlights].sort((a, b) => a.startOffset - b.startOffset);
+
+    sortedHighlights.forEach((highlight) => {
+      // Ensure we don't have negative indices
+      const startOffset = Math.max(0, highlight.startOffset);
+      const endOffset = Math.min(content.length, highlight.endOffset);
+
+      if (startOffset > lastIndex) {
         elements.push(
           <span
             key={`text-${lastIndex}`}
             className="text-doc-text"
             data-index={lastIndex}
           >
-            {content.slice(lastIndex, highlight.startOffset)}
+            {content.slice(lastIndex, startOffset)}
           </span>
         );
       }
@@ -73,9 +80,9 @@ export function DocumentContent({
           className="bg-doc-highlight-bg border border-doc-highlight-border text-doc-highlight-text
             group cursor-pointer transition-colors"
           onClick={() => onHighlightClick(highlight.conversationId)}
-          data-index={highlight.startOffset}
+          data-index={startOffset}
         >
-          {content.slice(highlight.startOffset, highlight.endOffset)}
+          {content.slice(startOffset, endOffset)}
           <span className="invisible group-hover:visible absolute -top-6 left-1/2
             -translate-x-1/2 bg-tooltip-bg text-tooltip-text border border-tooltip-border
             px-2 py-1 rounded text-sm whitespace-nowrap shadow-sm">
@@ -84,7 +91,7 @@ export function DocumentContent({
         </span>
       );
 
-      lastIndex = highlight.endOffset;
+      lastIndex = endOffset;
     });
 
     if (lastIndex < content.length) {
