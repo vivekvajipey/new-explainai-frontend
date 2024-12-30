@@ -22,9 +22,10 @@ export const useSocket = () => useContext(SocketContext);
 interface SocketProviderProps {
   children: React.ReactNode;
   documentId: string;
+  isDemo?: boolean;
 }
 
-export function SocketProvider({ children, documentId }: SocketProviderProps) {
+export function SocketProvider({ children, documentId, isDemo = false }: SocketProviderProps) {
   const { token } = useAuth();
   
   const [conversationSocket, setConversationSocket] = useState<ConversationWebSocket | null>(null);
@@ -32,9 +33,12 @@ export function SocketProvider({ children, documentId }: SocketProviderProps) {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    if (token) {
-      const newConversationSocket = new ConversationWebSocket(documentId, token);
-      const newDocumentSocket = new DocumentWebSocket(documentId, token);
+    // Create sockets if we have a token OR if it's a demo doc
+    if (token || isDemo) {
+      // For demo docs, pass null as token
+      const socketToken = isDemo ? null : token;
+      const newConversationSocket = new ConversationWebSocket(documentId, socketToken);
+      const newDocumentSocket = new DocumentWebSocket(documentId, socketToken);
       setConversationSocket(newConversationSocket);
       setDocumentSocket(newDocumentSocket);
       setIsConnected(true);
@@ -49,16 +53,10 @@ export function SocketProvider({ children, documentId }: SocketProviderProps) {
       setDocumentSocket(null);
       setIsConnected(false);
     }
-  }, [token, documentId]);
-
-  const contextValue: SocketContextType = {
-    conversationSocket,
-    documentSocket,
-    isConnected
-  };
+  }, [token, documentId, isDemo]);
 
   return (
-    <SocketContext.Provider value={contextValue}>
+    <SocketContext.Provider value={{ conversationSocket, documentSocket, isConnected }}>
       {children}
     </SocketContext.Provider>
   );
