@@ -146,11 +146,12 @@
   --color-doc-nav-button-disabled: var(--muted-blue-200);
   
   /* Document tabs colors */
-  --color-tab-active-bg: var(--pale-blue-200);
-  --color-tab-active-text: var(--muted-blue-700);
-  --color-tab-inactive-bg: var(--muted-blue-200);
-  --color-tab-inactive-text: white;
-  --color-tab-hover-bg: var(--pale-blue-300);
+  --color-tab-active-bg: var(--muted-blue-600);
+  --color-tab-active-text: white;
+  --color-tab-inactive-bg: var(--pale-blue-200);
+  --color-tab-inactive-text: var(--muted-blue-700);
+  --color-tab-hover-bg: var(--muted-blue-300);
+  --color-tab-hover-text: var(--pale-blue-200);
   
   /* Document content colors */
   --color-doc-content-bg: var(--pale-blue-50);
