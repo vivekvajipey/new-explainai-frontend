@@ -7,6 +7,14 @@ interface MessageHandler {
   (data: unknown): void;
 }
 
+interface ApprovedUser {
+  id: string;
+  email: string;
+  name: string;
+  created_at: string;
+  last_login: string | null;
+}
+
 export async function uploadDocument(file: File, token: string | null | undefined): Promise<{ document_id: string }> {
   const formData = new FormData();
   formData.append('file', file);
@@ -68,6 +76,48 @@ export async function deleteDocument(documentId: string, token: string): Promise
   if (!response.ok) {
     const error = await response.text();
     throw new Error(error);
+  }
+}
+
+export async function listApprovedUsers(token: string): Promise<ApprovedUser[]> {
+  const response = await fetch(`${API_BASE_URL}/api/auth/approved-users`, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch approved users');
+  }
+
+  return response.json();
+}
+
+export async function approveUser(email: string, token: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/auth/approve-user`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ email })
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to approve user');
+  }
+}
+
+export async function removeUserApproval(email: string, token: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/auth/approve-user/${email}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to remove user approval');
   }
 }
 
