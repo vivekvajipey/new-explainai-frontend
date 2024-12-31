@@ -34,15 +34,21 @@ export default function Home() {
     // Check for token from login.html
     if (!user) {
       const token = localStorage.getItem('google_token');
-      console.log('Found token:', token); // Add this debug line
-      if (token) {
-        login(token).catch((error) => {
-          setLoginError(error.message);
-          setIsModalOpen(true);
-          console.error('Login error:', error);
-        });
+      console.log('Found token:', token);
+      if (token && token !== 'undefined') {
+        login(token)
+          .then(() => {
+            // Only remove after successful login
+            localStorage.removeItem('google_token');
+          })
+          .catch((error) => {
+            setLoginError(error.message || "Email domain not authorized or user not approved");
+            setIsModalOpen(true);
+            console.error('Login error:', error);
+            // Also remove on error
+            localStorage.removeItem('google_token');
+          });
       }
-      localStorage.removeItem('google_token'); // Move this inside the if(token) block
     }
   }, [user, login]);
 
