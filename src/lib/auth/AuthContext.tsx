@@ -49,28 +49,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       
       console.log('Login response status:', response.status);
-      const responseText = await response.text();
-      console.log('Raw response:', responseText);
-      
-      if (!response.ok) {
-        console.error('Login response error:', responseText);
-        throw new Error(`Login failed: ${response.status} ${response.statusText}`);
+
+      if (response.status === 401) {
+        throw new Error('Currently, this app is open only to Stanford email holders and approved users. To get approved, please fill out the form.');
       }
       
-      const data = JSON.parse(responseText);
-      console.log('Login successful, received data:', { ...data, access_token: '***' });
-      
-      // Store token expiration time (24 hours from now)
-      const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
-      localStorage.setItem('tokenExpiresAt', expiresAt.toString());
-      
-      setToken(data.access_token);
-      localStorage.setItem('token', data.access_token);
-      
+      const data = await response.json();
+      setToken(data.token);
       setUser(data.user);
+      localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Login failed:', error);
       throw error;
     }
   };
