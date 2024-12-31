@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { ConversationWebSocket } from '@/lib/websocket/ConversationWebSocket';
 import { DocumentWebSocket } from '@/lib/api';
 import { useAuth } from '@/lib/auth/AuthContext';
+import { useCostLimit } from './CostLimitContext';
 
 interface SocketContextType {
   conversationSocket: ConversationWebSocket | null;
@@ -27,6 +28,7 @@ interface SocketProviderProps {
 
 export function SocketProvider({ children, documentId, isDemo = false }: SocketProviderProps) {
   const { token } = useAuth();
+  const { handleError } = useCostLimit();
   
   const [conversationSocket, setConversationSocket] = useState<ConversationWebSocket | null>(null);
   const [documentSocket, setDocumentSocket] = useState<DocumentWebSocket | null>(null);
@@ -37,7 +39,7 @@ export function SocketProvider({ children, documentId, isDemo = false }: SocketP
     if (token || isDemo) {
       // For demo docs, pass null as token
       const socketToken = isDemo ? null : token;
-      const newConversationSocket = new ConversationWebSocket(documentId, socketToken);
+      const newConversationSocket = new ConversationWebSocket(documentId, socketToken, undefined, handleError);
       const newDocumentSocket = new DocumentWebSocket(documentId, socketToken);
       setConversationSocket(newConversationSocket);
       setDocumentSocket(newDocumentSocket);
@@ -53,7 +55,7 @@ export function SocketProvider({ children, documentId, isDemo = false }: SocketP
       setDocumentSocket(null);
       setIsConnected(false);
     }
-  }, [token, documentId, isDemo]);
+  }, [token, documentId, isDemo, handleError]);
 
   return (
     <SocketContext.Provider value={{ conversationSocket, documentSocket, isConnected }}>

@@ -11,7 +11,8 @@ import Link from 'next/link';
 import React from "react";
 import type { AppProps } from 'next/app';
 import { useRouter } from "next/router";
-import Head from 'next/head'
+import Head from 'next/head';
+import { CostLimitProvider } from "@/contexts/CostLimitContext";
 
 function Header() {
   const router = useRouter();
@@ -139,13 +140,15 @@ export default function App({ Component, pageProps }: AppProps) {
         enableSystem
         disableTransitionOnChange
       >
-        <AuthProvider>
-          <AuthInitializer />
-          <Header />
-          <main className="container mx-auto px-4 py-8">
-            <Component {...pageProps} />
-          </main>
-        </AuthProvider>
+        <CostLimitProvider>
+          <AuthProvider>
+            <AuthInitializer />
+            <Header />
+            <main className="container mx-auto px-4 py-8">
+              <Component {...pageProps} />
+            </main>
+          </AuthProvider>
+        </CostLimitProvider>
       </ThemeProvider>
     </>
   );

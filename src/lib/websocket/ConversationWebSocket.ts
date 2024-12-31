@@ -24,12 +24,18 @@ export class ConversationWebSocket {
   private eventHandlers = new Map<string, Set<MessageHandler<unknown>>>();
   private pendingMessages: { type: string; data: unknown; request_id?: string }[] = [];
   private requestCounter = 0;
+  private onCostLimitError?: (userCost: number, costLimit: number) => void;
+  private onError?: (error: WebSocketError) => void;
 
   constructor(
     private readonly documentId: string,
     private readonly token: string | null = null,
+    onCostLimitError?: (userCost: number, costLimit: number) => void,
+    onError?: (error: WebSocketError) => void,
   ) {
     this.connectionPromise = this.connect();
+    this.onCostLimitError = onCostLimitError;
+    this.onError = onError;
   }
 
   private async connect(): Promise<void> {
@@ -68,30 +74,37 @@ export class ConversationWebSocket {
         reject(error);
       };
 
-      this.ws.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data);
-          const { type, data, request_id } = message;
-          console.log('WebSocket received message:', { type, data, request_id });
-          
-          const handlers = this.eventHandlers.get(type);
-          if (handlers) {
-            console.log('Found handlers for type:', type);
-            // Pass both the data and request_id to handlers
-            handlers.forEach(handler => {
-              console.log('Calling handler with:', { ...data, request_id });
-              handler({ ...data, request_id });
-            });
-          } else {
-            console.log('No handlers found for type:', type);
-            this.pendingMessages.push({ type, data, request_id });
-          }
-        } catch (error) {
-          console.error('Failed to process message:', error);
-        }
-      };
+      this.ws.onmessage = this.onmessage;
     });
   }
+
+  private onmessage = (event: MessageEvent) => {
+    try {
+      const message = JSON.parse(event.data);
+      const { type, data, request_id } = message;
+      console.log('WebSocket received message:', { type, data, request_id });
+      
+      const handlers = this.eventHandlers.get(type);
+      if (handlers) {
+        console.log('Found handlers for type:', type);
+        // Pass both the data and request_id to handlers
+        handlers.forEach(handler => {
+          console.log('Calling handler with:', { ...data, request_id });
+          handler({ ...data, request_id });
+        });
+      } else {
+        console.log('No handlers found for type:', type);
+        // If it's an error message, pass it to the global error handler
+        if (type.endsWith('.error')) {
+          this.onError?.(message);
+        } else {
+          this.pendingMessages.push({ type, data, request_id });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to process message:', error);
+    }
+  };
 
   private handleReconnect(): void {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
@@ -177,6 +190,7 @@ export class ConversationWebSocket {
       };
  
       const errorHandler = (error: WebSocketError) => {
+        this.handleWebSocketError(error);
         if (error.request_id === request_id) {
           clearTimeout(timer);
           reject(new Error(error.message || `Failed during ${requestType}`));
@@ -188,6 +202,31 @@ export class ConversationWebSocket {
       this.onMessage(responseType, handler);
       this.onMessage(`${responseType}.error`, errorHandler);
     });
+  }
+
+  private handleWebSocketError(error: WebSocketError) {
+    try {
+      // Handle string-encoded error data
+      if (error.data?.error && typeof error.data.error === 'string' && error.data.error.startsWith('402:')) {
+        const errorData = JSON.parse(error.data.error.substring(4).replace(/'/g, '"'));
+        if (errorData.error === 'cost_limit_exceeded' && 
+            typeof errorData.user_cost === 'number' && 
+            typeof errorData.cost_limit === 'number') {
+          this.onCostLimitError?.(errorData.user_cost, errorData.cost_limit);
+          return;
+        }
+      }
+      
+      // Handle direct error data structure
+      if (error.status === 402 && 
+          error.data?.error === 'cost_limit_exceeded' && 
+          error.data.user_cost != null && 
+          error.data.cost_limit != null) {
+        this.onCostLimitError?.(error.data.user_cost, error.data.cost_limit);
+      }
+    } catch (e) {
+      console.error('Failed to parse cost limit error:', e);
+    }
   }
 
   private ensureRecord(data: unknown): Record<string, unknown> {

@@ -55,6 +55,14 @@ export type MessageHandler<T = unknown> = (data: T) => void;
 export interface WebSocketError {
   message: string;
   request_id?: string;
+  status?: number;
+  data?: {
+    error?: string;
+    user_cost?: number;
+    cost_limit?: number;
+    message?: string;
+    details?: unknown;
+  };
 }
 
 export interface ConversationMessageSendCompleted {
