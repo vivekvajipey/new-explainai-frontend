@@ -14,12 +14,11 @@ import { UploadHandler } from '@/components/home/UploadHandler';
 import { AdminPanel } from '@/components/home/AdminPanel';
 import { DeleteConfirmationModal } from '@/components/modals/DeleteConfirmationModal';
 import { UploadProgressModal } from '@/components/modals/UploadProgressModal';
-import ErrorModal from '@/components/modals/ErrorModal';
+import ApprovalRequestModal from '@/components/modals/ApprovalRequestModal';
 
 export default function Home() {
   const router = useRouter();
   const { user, token, login, authError } = useAuth();
-  const [loginError, setLoginError] = useState<string | null>(null);  
   const [selectedText, setSelectedText] = useState<Document | null>(null);
   const [userDocuments, setUserDocuments] = useState<Document[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -38,7 +37,6 @@ export default function Home() {
 
   useEffect(() => {
     if (authError) {
-      setLoginError(authError);
       setIsModalOpen(true);
     }
   }, [authError]);
@@ -51,7 +49,6 @@ export default function Home() {
       if (googleToken && googleToken !== 'undefined') {
         login(googleToken)
           .catch((error) => {
-            setLoginError(error.message || "Email domain not authorized or user not approved");
             setIsModalOpen(true);
             console.error('Login error:', error);
             localStorage.removeItem('google_token');
@@ -246,13 +243,11 @@ export default function Home() {
 
   return (
     <>
-      <ErrorModal 
-        isOpen={isModalOpen} 
-        message={loginError || ''} 
+      <ApprovalRequestModal
+        isOpen={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);
-          setLoginError(null);
-        }} 
+        }}
       />
       
       <div className="space-y-8 max-w-6xl mx-auto">

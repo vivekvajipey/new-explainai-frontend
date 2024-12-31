@@ -93,6 +93,25 @@ export async function listApprovedUsers(token: string): Promise<ApprovedUser[]> 
   return response.json();
 }
 
+export async function requestApproval(
+  name: string,
+  email: string,
+  reason: string
+): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/auth/request-approval`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ name, email, reason })
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Failed to request approval: ${error}`);
+  }
+}
+
 export async function approveUser(email: string, token: string): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/api/auth/approve-user`, {
     method: 'POST',
