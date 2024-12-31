@@ -29,10 +29,12 @@ export default function Home() {
   const [newApprovalEmail, setNewApprovalEmail] = useState('');
   const [isLoadingApprovedUsers, setIsLoadingApprovedUsers] = useState(false);
 
+  // At the start of your useEffect that checks for token
   useEffect(() => {
     // Check for token from login.html
     if (!user) {
       const token = localStorage.getItem('google_token');
+      console.log('Found token:', token); // Add this debug line
       if (token) {
         login(token).catch((error) => {
           setLoginError(error.message);
@@ -40,8 +42,8 @@ export default function Home() {
           console.error('Login error:', error);
         });
       }
+      localStorage.removeItem('google_token'); // Move this inside the if(token) block
     }
-    localStorage.removeItem('google_token');
   }, [user, login]);
 
   useEffect(() => {

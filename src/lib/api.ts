@@ -100,11 +100,12 @@ export async function approveUser(email: string, token: string): Promise<void> {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ email })
+    body: JSON.stringify({ email })  // Send as JSON body instead of query param
   });
 
   if (!response.ok) {
-    throw new Error('Failed to approve user');
+    const error = await response.text();
+    throw new Error(`Failed to approve user: ${error}`);
   }
 }
 
