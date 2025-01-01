@@ -22,7 +22,6 @@ const ExplainerSection = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mt-16 relative -z-10">
         {steps.map((step, index) => (
           <div key={index} className="flex flex-col items-center text-center">
-            {/* Larger container for image */}
             <div className="relative w-full aspect-[4/3] mb-6 rounded-xl overflow-hidden border border-card-border shadow-lg">
               <Image
                 src={step.image}
@@ -33,8 +32,8 @@ const ExplainerSection = () => {
                 priority
               />
             </div>
-            {/* Keep text size moderate with lg instead of 2xl */}
-            <p className="text-lg text-sand-600 dark:text-sand-400 max-w-xs">
+            {/* Added px-4 for horizontal padding and adjusted max-w-sm for wider text container */}
+            <p className="text-lg text-sand-600 dark:text-sand-400 max-w-sm px-4 leading-relaxed">
               {step.caption}
             </p>
           </div>
