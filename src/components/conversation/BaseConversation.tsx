@@ -5,6 +5,7 @@ import { useConversationStreaming } from '@/hooks/useConversationStreaming';
 import { MessageInput } from './MessageInput';
 import { MessageList } from './MessageList';
 import { Message, MessageRole, StreamingState } from '@/types/conversation';
+import DemoLimitModal from '@/components/modals/DemoLimitModal';
 
 interface MessageSendConfig {
   type: 'main' | 'highlight';
@@ -29,6 +30,7 @@ export default function BaseConversation({
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDemoLimitModalOpen, setIsDemoLimitModalOpen] = useState(false);
   const [streamingState, setStreamingState] = useState<StreamingState>({
     id: null,
     isStreaming: false,
@@ -92,10 +94,8 @@ export default function BaseConversation({
       setError('No active conversation');
       return;
     }
-
     try {
       setError(null);
-      
       const userMessage: Message = {
         id: `temp-${Date.now()}`,
         role: 'user',
@@ -103,20 +103,24 @@ export default function BaseConversation({
         timestamp: new Date().toISOString(),
       };
       addMessage(userMessage);
-
-      // Add placeholder assistant message with conversationId as temporary ID
+      
       const assistantMessage: Message = {
-        id: conversationId,  // This will match streamingState.id during streaming
+        id: conversationId,
         role: 'assistant',
         content: '',
         timestamp: new Date().toISOString(),
       };
       addMessage(assistantMessage);
-
+      
       await handleStreamingMessage(content, messageSendConfig);
     } catch (err) {
       console.error('Failed to send message:', err);
-      setError(err instanceof Error ? err.message : 'Failed to send message');
+      // Check specifically for demo limit error
+      if (err instanceof Error && err.message.includes('demo message limit')) {
+        setIsDemoLimitModalOpen(true);
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to send message');
+      }
     }
   };
 
@@ -125,18 +129,25 @@ export default function BaseConversation({
   }
 
   return (
-    <div className={`flex flex-col h-full ${className}`}>
-      <MessageList
-        messages={messages}
-        streamingState={streamingState}
-        error={error}
+    <>
+      <div className={`flex flex-col h-full ${className}`}>
+        <MessageList
+          messages={messages}
+          streamingState={streamingState}
+          error={error}
+        />
+        <MessageInput
+          onSendMessage={handleSendMessage}
+          isStreaming={streamingState.isStreaming}
+          placeholder={placeholder}
+          disabled={!conversationId}
+        />
+      </div>
+
+      <DemoLimitModal 
+        isOpen={isDemoLimitModalOpen}
+        onClose={() => setIsDemoLimitModalOpen(false)}
       />
-      <MessageInput
-        onSendMessage={handleSendMessage}
-        isStreaming={streamingState.isStreaming}
-        placeholder={placeholder}
-        disabled={!conversationId}
-      />
-    </div>
+    </>
   );
 }
