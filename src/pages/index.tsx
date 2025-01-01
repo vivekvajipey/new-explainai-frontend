@@ -263,7 +263,7 @@ export default function Home() {
                 {isDemo ? "Try Our Example Documents" : user ? "Your Documents" : "Try Our Example Documents"}
               </h2>
               <p className="text-sand-600 dark:text-sand-400">
-                {isDemo ? "No sign in needed to try an example document." : user ? "Select or upload a document to analyze" : "Select an example document to analyze"}
+                {isDemo ? "No sign in needed to try an example document!" : user ? "Select or upload a document to analyze" : "No sign in needed to try an example document!"}
               </p>
             </div>
             <div className="space-y-6">
