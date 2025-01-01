@@ -73,28 +73,29 @@ function Header() {
           {user && (
             <>
               {userCost && (
-                <div className="text-xs text-header-text opacity-70 px-3 py-1 bg-header-user-bg rounded-lg">
-                  Cost: {userCost}
+                <div className="relative flex items-center gap-1 text-xs text-header-text opacity-70 px-3 py-1 bg-header-user-bg rounded-lg group">
+                  <span>Cost: {userCost}</span>
+                  <div className="relative">
+                    <svg 
+                      className="w-3.5 h-3.5 text-header-text opacity-70 cursor-help" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth="2" 
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+                      />
+                    </svg>
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mt-1 border-4 border-transparent border-b-gray-900"></div>
+                      The amount your account has cost us to run. We provide up to $3 free. We are broke and have no funding.
+                    </div>
+                  </div>
                 </div>
               )}
-              <div className="flex items-center gap-2 px-3 py-2 bg-header-user-bg rounded-lg">
-                <svg 
-                  className="w-4 h-4 text-header-user-icon" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeWidth="2" 
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" 
-                  />
-                </svg>
-                <span className="text-sm font-medium text-header-user-text">
-                  {user.email}
-                </span>
-              </div>
               <button
                 onClick={handleSignOut}
                 className="px-4 py-2 text-sm font-medium text-header-text 
