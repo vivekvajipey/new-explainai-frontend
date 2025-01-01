@@ -12,6 +12,7 @@ import { DocumentHeader } from '@/components/home/DocumentHeader';
 import { DocumentSelector } from '@/components/home/DocumentSelector';
 import { UploadHandler } from '@/components/home/UploadHandler';
 import { AdminPanel } from '@/components/home/AdminPanel';
+import ExplainerSection from '@/components/home/ExplainerSection';
 import { DeleteConfirmationModal } from '@/components/modals/DeleteConfirmationModal';
 import { UploadProgressModal } from '@/components/modals/UploadProgressModal';
 import ApprovalRequestModal from '@/components/modals/ApprovalRequestModal';
@@ -250,9 +251,9 @@ export default function Home() {
         }}
       />
       
-      <div className="space-y-8 max-w-6xl mx-auto">
+      {/* First section with normal width */}
+      <div className="max-w-6xl mx-auto">
         <DocumentHeader />
-
         <section className="px-4">
           <div className="bg-card-bg backdrop-blur-lg rounded-3xl p-12 max-w-3xl mx-auto 
                         shadow-2xl shadow-sand-900/5 dark:shadow-sand-900/20 
@@ -262,10 +263,9 @@ export default function Home() {
                 {isDemo ? "Try Our Example Documents" : user ? "Your Documents" : "Try Our Example Documents"}
               </h2>
               <p className="text-sand-600 dark:text-sand-400">
-                {isDemo ? "Select an example document to analyze" : user ? "Select or upload a document to analyze" : "Select an example document to analyze"}
+                {isDemo ? "No sign in needed to try an example document." : user ? "Select or upload a document to analyze" : "Select an example document to analyze"}
               </p>
             </div>
-
             <div className="space-y-6">
               {isDemo || user ? (
                 <>
@@ -279,7 +279,6 @@ export default function Home() {
                     user={user}
                     setDocumentToDelete={setDocumentToDelete}
                   />
-
                   {user && !isDemo && (
                     <UploadHandler
                       onUpload={handleFileUpload}
@@ -287,12 +286,11 @@ export default function Home() {
                       uploadProgress={uploadProgress}
                     />
                   )}
-
                   {selectedText && (
                     <button
                       onClick={handleTryItOut}
                       className="mt-6 w-full px-6 py-4 bg-button-analyze-bg hover:bg-button-analyze-hover text-button-analyze-text font-medium rounded-xl 
-                             transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 text-lg"
+                               transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 text-lg"
                     >
                       <span>Analyze this document</span>
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -305,7 +303,17 @@ export default function Home() {
             </div>
           </div>
         </section>
-
+      </div>
+  
+      {/* Separate container for ExplainerSection with full width */}
+      <div className="w-full">
+        <section className="mt-28">
+          <ExplainerSection />
+        </section>
+      </div>
+  
+      {/* Back to normal width for admin panel */}
+      <div className="max-w-6xl mx-auto">
         {user?.is_admin && (
           <AdminPanel
             approvedUsers={approvedUsers}
@@ -317,14 +325,14 @@ export default function Home() {
           />
         )}
       </div>
-
+  
       <UploadProgressModal
         isOpen={isUploading}
         uploadProgress={uploadProgress}
         chunks={chunks}
         uploadSuccess={uploadSuccess}
       />
-
+  
       <DeleteConfirmationModal
         document={documentToDelete}
         userEmail={user?.email}

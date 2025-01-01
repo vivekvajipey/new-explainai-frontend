@@ -53,8 +53,8 @@ export function DocumentSelector({
       </button>
 
       {isDropdownOpen && (
-                      <div className="absolute z-10 mt-1 w-full bg-card-bg shadow-lg rounded-xl 
-                                    border border-card-border max-h-96 overflow-y-auto">
+          <div className="absolute z-50 mt-1 w-full bg-card-bg shadow-lg rounded-xl 
+                          border border-card-border max-h-96 overflow-y-auto">
                         <div className="py-2">
                           {userDocuments.length > 0 ? (
                             <div>

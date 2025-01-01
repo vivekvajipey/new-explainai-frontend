@@ -32,7 +32,7 @@ export function ConversationContainer({
   );
 
   return (
-    <div className="flex flex-col h-full max-h-screen bg-doc-content-bg border border-doc-content-border rounded-lg shadow-sm">
+    <div className="flex flex-col h-[calc(100vh-16rem)] bg-doc-content-bg border border-doc-content-border rounded-lg shadow-sm">
       <ConversationTabList
         mainConversationId={mainConversationId}
         chunkConversations={chunkConversations}
