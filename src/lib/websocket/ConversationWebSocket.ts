@@ -11,6 +11,7 @@ import {
   ChunkConversationPayload
 } from './types';
 import { MessageRole } from '@/types/conversation';  // This line is already correct
+import { EXAMPLE_DOCUMENT_IDS } from '@/lib/constants';
 
 const WS_BASE_URL = 'wss://explainai-new-528ec8eb814a.herokuapp.com';
 
@@ -26,6 +27,8 @@ export class ConversationWebSocket {
   private requestCounter = 0;
   private onCostLimitError?: (userCost: number, costLimit: number) => void;
   private onError?: (error: WebSocketError) => void;
+  private isDemoDocument: boolean;
+  private readonly DEMO_MESSAGE_LIMIT = 5;
 
   constructor(
     private readonly documentId: string,
@@ -33,6 +36,7 @@ export class ConversationWebSocket {
     onCostLimitError?: (userCost: number, costLimit: number) => void,
     onError?: (error: WebSocketError) => void,
   ) {
+    this.isDemoDocument = EXAMPLE_DOCUMENT_IDS.includes(documentId);
     this.connectionPromise = this.connect();
     this.onCostLimitError = onCostLimitError;
     this.onError = onError;
@@ -158,6 +162,20 @@ export class ConversationWebSocket {
     });
     this.pendingMessages = [];
   }
+
+  private getDemoMessageCount(): number {
+    return parseInt(localStorage.getItem('total_demo_messages') || '0');
+  }
+  
+  private incrementDemoMessageCount(): void {
+    const count = this.getDemoMessageCount();
+    localStorage.setItem('total_demo_messages', (count + 1).toString());
+  }
+
+  public getRemainingDemoMessages(): number {
+    if (!this.isDemoDocument) return 0;
+    return Math.max(0, this.DEMO_MESSAGE_LIMIT - this.getDemoMessageCount());
+  }
  
   private async waitForConnection(): Promise<void> {
     if (this.isConnected) return;
@@ -275,6 +293,14 @@ export class ConversationWebSocket {
     chunkId?: string,
     conversationType?: string
   ): Promise<ConversationMessageSendCompleted> {
+    if (this.isDemoDocument) {
+      const remaining = this.getRemainingDemoMessages();
+      if (remaining <= 0) {
+        throw new Error('You have reached the demo message limit. Please sign in to continue.');
+      }
+      this.incrementDemoMessageCount();
+    }
+
     return this.sendAndWait<ConversationMessageSendCompleted>(
       'conversation.message.send',
       'conversation.message.send.completed',
@@ -299,6 +325,15 @@ export class ConversationWebSocket {
     chunkId?: string,
     conversationType: string = 'main'
   ): Promise<ConversationMessageSendCompleted> {
+    console.log("This is a demo document?", this.isDemoDocument);
+    if (this.isDemoDocument) {
+      const remaining = this.getRemainingDemoMessages();
+      console.log("Remaining demo messages:", remaining);
+      if (remaining <= 0) {
+        throw new Error('You have reached the demo message limit. Please sign in to continue.');
+      }
+      this.incrementDemoMessageCount();
+    }
     await this.waitForConnection();
     let fullMessage = '';
     let isComplete = false;

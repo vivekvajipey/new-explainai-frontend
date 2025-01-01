@@ -8,17 +8,21 @@ import { ThemeToggle } from "@/components/header/ThemeToggle";
 import { useSocket } from "@/contexts/SocketContext";
 import { getUserCost } from "@/lib/api";
 import Link from 'next/link'; 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import type { AppProps } from 'next/app';
 import { useRouter } from "next/router";
 import Head from 'next/head';
 import { CostLimitProvider } from "@/contexts/CostLimitContext";
+import { EXAMPLE_DOCUMENT_IDS } from "@/lib/constants";
 
 function Header() {
   const router = useRouter();
   const { user, logout, token } = useAuth();
   const { documentSocket } = useSocket();
   const [userCost, setUserCost] = React.useState<string | null>(null);
+  const [demoMessagesUsed, setDemoMessagesUsed] = useState<number | null>(null);
+  const isDemoDoc = router.query.id && EXAMPLE_DOCUMENT_IDS.includes(router.query.id as string);
+  
 
   const handleSignOut = () => {
     // Close WebSocket connections
@@ -32,6 +36,21 @@ function Header() {
     // Redirect to home page
     router.push('/');
   };
+
+  useEffect(() => {
+    function updateDemoCount() {
+      if (isDemoDoc) {
+        const count = parseInt(localStorage.getItem('total_demo_messages') || '0');
+        setDemoMessagesUsed(count);
+      } else {
+        setDemoMessagesUsed(null);
+      }
+    }
+
+    updateDemoCount();
+    const intervalId = setInterval(updateDemoCount, 1000);
+    return () => clearInterval(intervalId);
+  }, [isDemoDoc]);
 
   // Fetch cost when user logs in
   React.useEffect(() => {
@@ -70,6 +89,30 @@ function Header() {
               Sign In
             </a>
           )}
+          {!user && isDemoDoc && (
+          <div className="relative flex items-center gap-1 text-xs text-header-text opacity-70 px-3 py-1 bg-header-user-bg rounded-lg group">
+            <span>Messages: {demoMessagesUsed} of 5</span>
+            <div className="relative">
+              <svg 
+                className="w-3.5 h-3.5 text-header-text opacity-70 cursor-help" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth="2" 
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+                />
+              </svg>
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mt-1 border-4 border-transparent border-b-gray-900"></div>
+                Number of free messages used as demo user. Sign in to get unlimited messages!
+              </div>
+            </div>
+          </div>
+        )}
           {user && (
   <>
       {userCost && (
