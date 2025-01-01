@@ -9,7 +9,7 @@ const ExplainerSection = () => {
     },
     {
       image: '/main_new.png',
-      caption: 'Ask questions in the main conversation tab, which sees what you read, as you read it.',
+      caption: 'Ask questions in the main conversation tab. Our AI sees what you read as you read it.',
     },
     {
       image: '/highlight.png',
