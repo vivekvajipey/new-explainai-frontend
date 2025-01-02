@@ -16,6 +16,7 @@ import ExplainerSection from '@/components/home/ExplainerSection';
 import { DeleteConfirmationModal } from '@/components/modals/DeleteConfirmationModal';
 import { UploadProgressModal } from '@/components/modals/UploadProgressModal';
 import ApprovalRequestModal from '@/components/modals/ApprovalRequestModal';
+import { useGoogleAnalytics } from '@/hooks/useGoogleAnalytics';
 
 export default function Home() {
   const router = useRouter();
@@ -35,6 +36,8 @@ export default function Home() {
   const [approvedUsers, setApprovedUsers] = useState<Array<{ id: string; email: string; name: string; created_at: string; last_login: string | null; }>>([]);
   const [newApprovalEmail, setNewApprovalEmail] = useState('');
   const [isLoadingApprovedUsers, setIsLoadingApprovedUsers] = useState(false);
+
+  const { trackEvent } = useGoogleAnalytics();
 
   useEffect(() => {
     if (authError) {
@@ -105,6 +108,7 @@ export default function Home() {
       return;
     }
 
+    trackEvent('Authenticated', 'upload_started');
     setIsUploading(true);
     setUploadProgress(0);
     setChunks({ total: 0, processed: 0 });
@@ -123,6 +127,7 @@ export default function Home() {
         
           // Inside the progress interval in handleFileUpload
           if (progress.is_complete) {
+            trackEvent('Authenticated', 'upload_completed');
             console.log('Upload complete detected, clearing interval');
             clearInterval(progressInterval);
             // Set progress to 100% first
@@ -214,6 +219,12 @@ export default function Home() {
 
   const handleTryItOut = () => {
     if (!selectedText) return;
+
+    trackEvent(
+      isDemo ? 'Demo' : 'Authenticated',
+      'analyze_clicked',
+      selectedText.id
+    );
     
     // Redirect to the document page with the selected document ID
     router.push(`/documents/${selectedText.id}`);

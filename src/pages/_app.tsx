@@ -14,6 +14,7 @@ import { useRouter } from "next/router";
 import Head from 'next/head';
 import { CostLimitProvider } from "@/contexts/CostLimitContext";
 import { EXAMPLE_DOCUMENT_IDS } from "@/lib/constants";
+import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
 
 function Header() {
   const router = useRouter();
@@ -23,7 +24,6 @@ function Header() {
   const [demoMessagesUsed, setDemoMessagesUsed] = useState<number | null>(null);
   const isDemoDoc = router.query.id && EXAMPLE_DOCUMENT_IDS.includes(router.query.id as string);
   
-
   const handleSignOut = () => {
     // Close WebSocket connections
     if (documentSocket) {
@@ -188,8 +188,22 @@ function Header() {
 
 
 export default function App({ Component, pageProps }: AppProps) {
+  useGoogleAnalytics();
+  
   return (
     <>
+      <Script
+        src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
+        strategy="afterInteractive"
+      />
+      <Script id="google-analytics" strategy="afterInteractive">
+        {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
+        `}
+      </Script>
       <Script src="https://accounts.google.com/gsi/client" async defer />
       <Head>
         <title>ExplainAI - Intelligent Document Analysis</title>

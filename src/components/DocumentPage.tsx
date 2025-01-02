@@ -8,6 +8,7 @@ import { DocumentMetadata, DocumentMetadataResponse } from '@/components/documen
 import { useMainConversation } from '@/hooks/useMainConversation';
 import { useChunkConversations } from '@/hooks/useChunkConversation'; // Import the new hook
 import { Highlight } from '@/components/document/types'; // Import Highlight type
+import { useGoogleAnalytics } from '@/hooks/useGoogleAnalytics'; // Import the new hook
 
 export function DocumentPage({ documentId }: { documentId: string }) {
   // Core document state
@@ -25,6 +26,8 @@ export function DocumentPage({ documentId }: { documentId: string }) {
 
   // Calculate current chunk
   const currentChunk = metadata?.chunks[currentChunkIndex];
+
+  const { trackEvent } = useGoogleAnalytics();
 
   useEffect(() => {
     if (mainConversationId) {
@@ -87,6 +90,7 @@ export function DocumentPage({ documentId }: { documentId: string }) {
   // Handle chunk changes
   const handleChunkChange = useCallback((newIndex: number) => {
     if (!metadata || newIndex < 0 || newIndex >= metadata.chunks.length) return;
+    trackEvent('Document', 'chunk_changed', `chunk_${newIndex}`);
     setCurrentChunkIndex(newIndex);
   }, [metadata]);
 
@@ -98,6 +102,7 @@ export function DocumentPage({ documentId }: { documentId: string }) {
     if (!conversationSocket) return;
 
     setIsConversationCollapsed(false);
+    trackEvent('Conversation', 'highlight_conversation_created');
     
     try {
       const conversationId = await conversationSocket.createChunkConversation(
@@ -116,6 +121,7 @@ export function DocumentPage({ documentId }: { documentId: string }) {
   const handleHighlightClick = useCallback((conversationId: string) => {
     setIsConversationCollapsed(false);
     setActiveConversationId(conversationId);
+    trackEvent('Conversation', 'highlight_conversation_opened', conversationId);
     // Could add:
     // - Validation that the conversation exists
     // - Error handling

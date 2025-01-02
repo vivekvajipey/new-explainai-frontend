@@ -5,6 +5,7 @@ import { useConversationStreaming } from '@/hooks/useConversationStreaming';
 import { MessageInput } from './MessageInput';
 import { MessageList } from './MessageList';
 import { Message, MessageRole, StreamingState } from '@/types/conversation';
+import { useGoogleAnalytics } from '@/hooks/useGoogleAnalytics';
 import DemoLimitModal from '@/components/modals/DemoLimitModal';
 
 interface MessageSendConfig {
@@ -31,6 +32,7 @@ export default function BaseConversation({
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDemoLimitModalOpen, setIsDemoLimitModalOpen] = useState(false);
+  const { trackEvent } = useGoogleAnalytics();
   const [streamingState, setStreamingState] = useState<StreamingState>({
     id: null,
     isStreaming: false,
@@ -95,6 +97,11 @@ export default function BaseConversation({
       return;
     }
     try {
+      trackEvent(
+        'Conversation', 
+        'message_sent',
+        messageSendConfig.type, // 'main' or 'highlight'
+      );
       setError(null);
       const userMessage: Message = {
         id: `temp-${Date.now()}`,
@@ -118,6 +125,7 @@ export default function BaseConversation({
       // Check specifically for demo limit error
       if (err instanceof Error && err.message.includes('demo message limit')) {
         setIsDemoLimitModalOpen(true);
+        trackEvent('Demo', 'demo_limit_reached');
       } else {
         setError(err instanceof Error ? err.message : 'Failed to send message');
       }
