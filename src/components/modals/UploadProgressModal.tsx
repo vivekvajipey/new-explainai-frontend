@@ -60,7 +60,7 @@ export function UploadProgressModal({
           <p className="text-sand-600 dark:text-sand-300 mb-6 text-center">
             {uploadSuccess 
               ? 'Your document has been processed successfully. Redirecting...'
-              : 'Please wait while we process your document. This may take a few minutes.'}
+              : 'Please wait while we process your document. This should take no more than twenty seconds.'}
           </p>
         </div>
       </div>
