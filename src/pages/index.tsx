@@ -3,7 +3,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { uploadDocument, listDocuments, deleteDocument, getUploadProgress, listApprovedUsers, approveUser, removeUserApproval } from '@/lib/api';
+import { uploadDocument, listDocuments, deleteDocument, listApprovedUsers, approveUser, removeUserApproval } from '@/lib/api';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { Document } from '@/types';
 
@@ -25,8 +25,6 @@ export default function Home() {
   const [userDocuments, setUserDocuments] = useState<Document[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [chunks, setChunks] = useState({ total: 0, processed: 0 });
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [isDemo, setIsDemo] = useState(!user);
   const [documentToDelete, setDocumentToDelete] = useState<Document | null>(null);
@@ -101,93 +99,47 @@ export default function Home() {
     const file = event.target.files?.[0];
     if (!file || !token) {
       if (!token) {
-        // If no token, prompt for login
         console.log('No token available, please log in');
-        return;
       }
       return;
     }
-
+  
     trackEvent('Authenticated', 'upload_started');
     setIsUploading(true);
-    setUploadProgress(0);
-    setChunks({ total: 0, processed: 0 });
     setUploadSuccess(false);
-
+  
     try {
-      // Start polling for progress
-      const progressInterval = setInterval(async () => {
-        try {
-          const progress = await getUploadProgress(file.name, token);
-          if (progress.total_chunks > 0) {
-            const percentage = Math.round((progress.processed_chunks / progress.total_chunks) * 100);
-            setUploadProgress(percentage);
-            setChunks({ total: progress.total_chunks, processed: progress.processed_chunks });
-          }
-        
-          // Inside the progress interval in handleFileUpload
-          if (progress.is_complete) {
-            trackEvent('Authenticated', 'upload_completed');
-            console.log('Upload complete detected, clearing interval');
-            clearInterval(progressInterval);
-            // Set progress to 100% first
-            setUploadProgress(100);
-            setChunks(prev => ({ ...prev, processed: prev.total }));
-            
-            // Small delay before showing success
-            setTimeout(async () => {
-              console.log('Starting post-upload processing');
-              // Refresh the documents list
-              const docs = await listDocuments(token);
-              console.log('Fetched updated document list:', docs);
-              setUserDocuments(docs);
-              
-              // Set success state and auto-select the new document
-              setUploadSuccess(true);
-              const newDoc = docs.sort((a, b) => 
-                new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-              )[0];
-              
-              console.log('Using most recent document:', newDoc);
-              
-              if (newDoc) {
-                setSelectedText(newDoc);
-                console.log('Set selected text, preparing to redirect to:', `/documents/${newDoc.id}`);
-                // Wait a moment to show success before redirecting
-                setTimeout(() => {
-                  console.log('Attempting redirect now');
-                  router.push(`/documents/${newDoc.id}`);
-                }, 750);
-              } else {
-                console.log('Could not find new document in updated list');
-              }
-            }, 250);
-          }
-        } catch (error) {
-          console.error('Error checking progress:', error);
-          if (error instanceof Error && 'status' in error && error.status === 401) {
-            // Token expired during upload
-            clearInterval(progressInterval);
-            setIsUploading(false);
-            setUploadProgress(0);
-            // Let AuthContext handle the token refresh
-          }
-        }
-      }, 1000);
-
-      // Start the upload
-      await uploadDocument(file, token);
-
+      // Start the upload and get the document ID directly from the response
+      const response = await uploadDocument(file, token);
+      const documentId = response.document_id;
+  
+      console.log('Upload successful, document ID:', documentId);
+  
+      // Fetch the updated list of documents
+      const docs = await listDocuments(token);
+      setUserDocuments(docs);
+  
+      // Find and select the new document
+      const newDoc = docs.find((doc) => doc.id === documentId);
+      if (newDoc) {
+        setSelectedText(newDoc);
+        setUploadSuccess(true);
+  
+        // Redirect to the new document
+        router.push(`/documents/${newDoc.id}`);
+      } else {
+        console.error('Uploaded document not found in updated document list.');
+        setUploadSuccess(false);
+      }
     } catch (error) {
       console.error('Upload failed:', error);
-      if (error instanceof Error && 'status' in error && error.status === 401) {
-        // Token expired before upload
-        // Let AuthContext handle the token refresh
-      }
+      setUploadSuccess(false);
+    } finally {
       setIsUploading(false);
-      setUploadProgress(0);
     }
   };
+  
+  
 
   const handleApproveUser = async () => {
     if (!token || !newApprovalEmail) return;
@@ -294,7 +246,6 @@ export default function Home() {
                     <UploadHandler
                       onUpload={handleFileUpload}
                       isUploading={isUploading}
-                      uploadProgress={uploadProgress}
                     />
                   )}
                   {selectedText && (
@@ -339,10 +290,9 @@ export default function Home() {
   
       <UploadProgressModal
         isOpen={isUploading}
-        uploadProgress={uploadProgress}
-        chunks={chunks}
         uploadSuccess={uploadSuccess}
       />
+
   
       <DeleteConfirmationModal
         document={documentToDelete}
