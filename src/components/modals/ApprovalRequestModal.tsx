@@ -60,12 +60,12 @@ const ApprovalRequestModal: React.FC<ApprovalRequestModalProps> = ({ isOpen, onC
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="relative bg-white text-black rounded-xl p-8 max-w-2xl w-full shadow-2xl">
+      <div className="relative bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-xl p-8 max-w-2xl w-full shadow-2xl">
         
         {/* Header section */}
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Request Access</h2>
-          <p className="mt-2 text-gray-600">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Request Access</h2>
+          <p className="mt-2 text-gray-600 dark:text-gray-300">
             Currently, ExplainAI is available only to approved emails or emails under a Stanford domain.
             If you would like to request approval, please fill out this form!
           </p>
@@ -74,7 +74,7 @@ const ApprovalRequestModal: React.FC<ApprovalRequestModalProps> = ({ isOpen, onC
         {/* Close button - made more elegant */}
         <button 
           type="button"
-          className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 transition-colors"
+          className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-400 transition-colors"
           onClick={onClose}
         >
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -84,12 +84,12 @@ const ApprovalRequestModal: React.FC<ApprovalRequestModalProps> = ({ isOpen, onC
 
         <form onSubmit={handleSubmit}>
           {error && (
-            <div className="bg-red-50 text-red-800 p-4 mb-6 rounded-lg border border-red-200">
+            <div className="bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200 p-4 mb-6 rounded-lg border border-red-200 dark:border-red-800">
               {error}
             </div>
           )}
           {success && (
-            <div className="bg-green-50 text-green-800 p-4 mb-6 rounded-lg border border-green-200">
+            <div className="bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-200 p-4 mb-6 rounded-lg border border-green-200 dark:border-green-800">
               Request sent successfully!
             </div>
           )}
@@ -143,7 +143,7 @@ const ApprovalRequestModal: React.FC<ApprovalRequestModalProps> = ({ isOpen, onC
           <div className="flex items-center justify-end mt-8 space-x-4">
             <button
               type="button"
-              className="px-6 py-2.5 rounded-lg border border-gray-300 font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              className="px-6 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               onClick={onClose}
               disabled={loading}
             >
