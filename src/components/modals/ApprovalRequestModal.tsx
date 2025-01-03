@@ -96,13 +96,13 @@ const ApprovalRequestModal: React.FC<ApprovalRequestModalProps> = ({ isOpen, onC
 
           <div className="space-y-6">
             <div>
-              <label className="block mb-2 font-medium text-gray-700" htmlFor="name">
+              <label className="block mb-2 font-medium text-gray-700 dark:text-gray-200" htmlFor="name">
                 Name
               </label>
               <input
                 id="name"
                 type="text"
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
@@ -111,13 +111,13 @@ const ApprovalRequestModal: React.FC<ApprovalRequestModalProps> = ({ isOpen, onC
             </div>
 
             <div>
-              <label className="block mb-2 font-medium text-gray-700" htmlFor="email">
+              <label className="block mb-2 font-medium text-gray-700 dark:text-gray-200" htmlFor="email">
                 Email
               </label>
               <input
                 id="email"
                 type="email"
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -126,12 +126,12 @@ const ApprovalRequestModal: React.FC<ApprovalRequestModalProps> = ({ isOpen, onC
             </div>
 
             <div>
-              <label className="block mb-2 font-medium text-gray-700" htmlFor="blurb">
+              <label className="block mb-2 font-medium text-gray-700 dark:text-gray-200" htmlFor="blurb">
                 How you plan to use it
               </label>
               <textarea
                 id="blurb"
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors min-h-[120px]"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors min-h-[120px] bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 value={blurb}
                 onChange={(e) => setBlurb(e.target.value)}
                 required
