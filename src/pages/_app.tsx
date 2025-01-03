@@ -206,7 +206,7 @@ export default function App({ Component, pageProps }: AppProps) {
       </Script>
       <Script src="https://accounts.google.com/gsi/client" async defer />
       <Head>
-        <title>ExplainAI - Intelligent Document Analysis</title>
+        <title>ExplainAI - Read Better</title>
         <meta name="description" content="AI-powered document analysis and conversation platform" />
         <link rel="icon" href="/book_E_logo.png" />
       </Head>
