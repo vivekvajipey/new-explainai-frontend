@@ -1,6 +1,6 @@
 // new-explainai-frontend/src/lib/websocket/types.ts
 
-import { MessageRole } from "@/types/conversation";
+import { MessageRole, Question } from "@/types/conversation";
 
 export interface Message {
   id: string;
@@ -108,5 +108,25 @@ export interface ChunkConversationPayload {
   chunk_id: string;
   highlight_text: string;
   highlight_range?: { start: number; end: number };
+  request_id?: string;
+}
+
+export interface GenerateQuestionsRequest {
+  conversation_id: string;
+  conversation_type: 'main' | 'highlight';
+  chunk_id?: string;
+  count?: number;
+  request_id?: string;
+}
+
+export interface GenerateQuestionsCompleted {
+  conversation_id: string;
+  questions: string[];
+  cost: number;
+  request_id?: string;
+}
+
+export interface ListQuestionsResponse {
+  questions: Question[];
   request_id?: string;
 }

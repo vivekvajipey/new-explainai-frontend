@@ -4,15 +4,12 @@ import { useSocket } from '@/contexts/SocketContext';
 import { useConversationStreaming } from '@/hooks/useConversationStreaming';
 import { MessageInput } from './MessageInput';
 import { MessageList } from './MessageList';
-import { Message, MessageRole, StreamingState } from '@/types/conversation';
+import { Message, MessageRole, MessageSendConfig, StreamingState } from '@/types/conversation';
 import { useGoogleAnalytics } from '@/hooks/useGoogleAnalytics';
+import { SuggestedQuestions } from './SuggestedQuestions';
 import DemoLimitModal from '@/components/modals/DemoLimitModal';
+import { useConversationQuestions } from '@/hooks/useConversationQuestions';
 
-interface MessageSendConfig {
-  type: 'main' | 'highlight';
-  chunkId: string;
-  highlightText?: string;
-}
 
 interface BaseConversationProps {
   conversationId: string;
@@ -38,6 +35,22 @@ export default function BaseConversation({
     isStreaming: false,
     content: ''
   });
+  const {
+    questions,
+    isLoading: questionsLoading,
+    isCollapsed,
+    setIsCollapsed,
+    fetchQuestions
+  } = useConversationQuestions(conversationId);
+
+  const handleQuestionSelect = async (question: { id: string; content: string }) => {
+    try {
+      await handleSendMessage(question.content, question.id);
+      await fetchQuestions();  // We'll need to lift this from the hook
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send question');
+    }
+  };
   
   useEffect(() => {
     console.log('Streaming state updated:', streamingState);
@@ -91,16 +104,16 @@ export default function BaseConversation({
     replaceMessage
   );
 
-  const handleSendMessage = async (content: string) => {
+  const handleSendMessage = async (content: string, questionId?: string) => {
     if (!conversationId) {
       setError('No active conversation');
       return;
     }
     try {
       trackEvent(
-        'Conversation', 
-        'message_sent',
-        messageSendConfig.type, // 'main' or 'highlight'
+        'Conversation',
+        questionId ? 'suggested_question_sent' : 'message_sent',
+        messageSendConfig.type
       );
       setError(null);
       const userMessage: Message = {
@@ -119,7 +132,10 @@ export default function BaseConversation({
       };
       addMessage(assistantMessage);
       
-      await handleStreamingMessage(content, messageSendConfig);
+      await handleStreamingMessage(content, {
+        ...messageSendConfig,
+        questionId
+      });
     } catch (err) {
       console.error('Failed to send message:', err);
       // Check specifically for demo limit error
@@ -139,6 +155,14 @@ export default function BaseConversation({
   return (
     <>
       <div className={`flex flex-col h-full ${className}`}>
+        <SuggestedQuestions
+          questions={questions}
+          isLoading={questionsLoading}
+          isCollapsed={isCollapsed}
+          onCollapse={() => setIsCollapsed(!isCollapsed)}
+          onQuestionSelect={handleQuestionSelect}
+          className="border-b border-doc-content-border"
+        />
         <MessageList
           messages={messages}
           streamingState={streamingState}

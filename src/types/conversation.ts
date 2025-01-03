@@ -18,4 +18,15 @@ export interface MessageSendConfig {
   type: 'main' | 'highlight';
   chunkId: string;
   highlightText?: string;
+  questionId?: string;
+}
+
+export interface Question {
+  id: string;
+  content: string;
+  answered: boolean;
+  created_at: string;
+  meta_data?: {
+    chunk_id?: string;
+  };
 }

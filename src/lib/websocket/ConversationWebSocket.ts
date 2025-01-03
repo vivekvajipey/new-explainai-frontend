@@ -8,9 +8,11 @@ import {
   ConversationCreateCompleted,
   ConversationMessageSendCompleted,
   ConversationMessagesCompleted,
-  ChunkConversationPayload
+  ChunkConversationPayload,
+  GenerateQuestionsCompleted,
+  GenerateQuestionsRequest,
 } from './types';
-import { MessageRole } from '@/types/conversation';  // This line is already correct
+import { MessageRole, Question } from '@/types/conversation';  // This line is already correct
 import { EXAMPLE_DOCUMENT_IDS } from '@/lib/constants';
 
 const WS_BASE_URL = 'wss://explainai-new-528ec8eb814a.herokuapp.com';
@@ -323,7 +325,8 @@ export class ConversationWebSocket {
       onError: (error: Error) => void;
     },
     chunkId?: string,
-    conversationType: string = 'main'
+    type: string = 'main',
+    questionId?: string
   ): Promise<ConversationMessageSendCompleted> {
     console.log("This is a demo document?", this.isDemoDocument);
     if (this.isDemoDocument) {
@@ -350,7 +353,6 @@ export class ConversationWebSocket {
     this.onMessage('chat.token', tokenHandler);
  
     try {
-      // Send the message
       const response = await this.sendAndWait<ConversationMessageSendCompleted>(
         'conversation.message.send',
         'conversation.message.send.completed',
@@ -358,7 +360,8 @@ export class ConversationWebSocket {
           conversation_id: conversationId,
           content,
           chunk_id: chunkId,
-          conversation_type: conversationType
+          conversation_type: type,  // Use the type parameter here
+          question_id: questionId   // Add question_id if provided
         }
       );
 
@@ -419,6 +422,39 @@ export class ConversationWebSocket {
       {}
     );
     return response.conversations;
+  }
+
+  async generateQuestions(
+    conversationId: string, 
+    conversationType: 'main' | 'highlight',
+    options: {
+      chunkId?: string;
+      count?: number;
+    } = {}
+  ): Promise<string[]> {
+    const requestData: GenerateQuestionsRequest = {
+      conversation_id: conversationId,
+      conversation_type: conversationType,
+      chunk_id: options.chunkId,
+      count: options.count || 3
+    };
+  
+    const response = await this.sendAndWait<GenerateQuestionsCompleted>(
+      'conversation.questions.generate',
+      'conversation.questions.generate.completed',
+      requestData
+    );
+    
+    return response.questions;
+  }
+
+  async listQuestions(conversationId: string): Promise<Question[]> {
+    const response = await this.sendAndWait<{questions: Question[]}>(
+      'conversation.questions.list',
+      'conversation.questions.list.completed',
+      { conversation_id: conversationId }
+    );
+    return response.questions;
   }
  
   removeHandler<T>(event: string, handler: MessageHandler<T>): void {

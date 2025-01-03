@@ -55,7 +55,8 @@ export function useConversationStreaming(
           }
         },
         config.chunkId,
-        config.type
+        config.type,
+        config.questionId  // Pass through the questionId
       );
 
       // Add completed message
