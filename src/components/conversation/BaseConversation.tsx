@@ -61,6 +61,10 @@ export default function BaseConversation({
     console.log('Streaming state updated:', streamingState);
   }, [streamingState]);
 
+  useEffect(() => {
+    loadMessages();
+  }, [conversationId, conversationSocket]);
+
   const loadMessages = async () => {
     if (!conversationId || !conversationSocket) return;
     
