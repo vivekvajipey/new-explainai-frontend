@@ -105,6 +105,19 @@ export default {
             'tab-inactive-text': 'var(--color-tab-inactive-text)',
             'tab-hover-bg': 'var(--color-tab-hover-bg)',
   		},
+      animation: {
+        'spin': 'spin 1s linear infinite',
+      },
+      keyframes: {
+        spin: {
+          'from': {
+            transform: 'rotate(0deg)',
+          },
+          'to': {
+            transform: 'rotate(360deg)',
+          },
+        },
+      },
   		fontFamily: {
   			palatino: [
   				'Palatino',

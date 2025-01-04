@@ -1,5 +1,7 @@
 // components/conversation/SuggestedQuestions.tsx
 import { useGoogleAnalytics } from '@/hooks/useGoogleAnalytics';
+import { ArrowPathIcon } from '@heroicons/react/24/outline';
+import { useState } from 'react';
 
 interface Question {
   id: string;
@@ -26,8 +28,31 @@ export function SuggestedQuestions({
   className = ''
 }: SuggestedQuestionsProps) {
   const { trackEvent } = useGoogleAnalytics();
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
-  if (isLoading) return null;
+  const handleRegenerate = async () => {
+    console.log('Starting regeneration');
+    setIsRegenerating(true);
+    try {
+      await onRegenerate();
+    } finally {
+      console.log('Finishing regeneration');
+      setIsRegenerating(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className={`p-4 ${className}`}>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm text-doc-content-text font-medium">
+            Loading questions...
+          </h3>
+        </div>
+      </div>
+    );
+  }
+
   if (!questions.length) {
     return (
       <div className={`p-4 ${className}`}>
@@ -36,9 +61,15 @@ export function SuggestedQuestions({
             All questions asked
           </h3>
           <button
-            onClick={onRegenerate}
-            className="text-muted-blue-400 hover:text-muted-blue-600 transition-colors"
+            onClick={handleRegenerate}
+            disabled={isRegenerating}
+            className="text-muted-blue-400 hover:text-muted-blue-600 transition-colors
+            disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+            title="Regenerate questions"
           >
+            <ArrowPathIcon
+              className={`h-4 w-4 ${isRegenerating ? 'animate-spin' : ''}`}
+            />
             Generate new questions
           </button>
         </div>
@@ -53,12 +84,18 @@ export function SuggestedQuestions({
           Suggested questions
         </h3>
         <div className="flex gap-2">
-          <button
-            onClick={onRegenerate}
-            className="text-muted-blue-400 hover:text-muted-blue-600 transition-colors"
-          >
-            Regenerate
-          </button>
+        <button
+          onClick={handleRegenerate}
+          disabled={isRegenerating}
+          className="text-muted-blue-400 hover:text-muted-blue-600 transition-colors
+          disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+        >
+          <ArrowPathIcon
+            className={`h-4 w-4 ${isRegenerating ? 'animate-spin' : ''}`}
+          />
+          Generate new questions
+        </button>
+
           <button
             onClick={onCollapse}
             className="text-muted-blue-400 hover:text-muted-blue-600 transition-colors"
@@ -77,7 +114,7 @@ export function SuggestedQuestions({
                 trackEvent('Conversation', 'suggested_question_selected', question.content);
                 await onQuestionSelect(question);
               }}
-              className="text-left p-2 rounded-lg bg-doc-content-bg hover:bg-doc-nav-button-hover 
+              className="text-left p-2 rounded-lg bg-doc-content-bg hover:bg-doc-nav-button-hover
                         text-doc-content-text text-sm transition-colors border border-doc-content-border"
             >
               {question.content}
