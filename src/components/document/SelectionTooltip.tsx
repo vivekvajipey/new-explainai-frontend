@@ -35,7 +35,7 @@ export const SelectionTooltip: React.FC<SelectionTooltipProps> = ({
         }}
         variant="ghost"
         className="flex items-center space-x-2 px-3 py-2 text-tooltip-text 
-                   hover:bg-tooltip-border rounded-lg transition-colors
+                   hover:bg-tooltip-hover rounded-lg transition-colors
                    text-sm whitespace-nowrap w-full"
       >
         <MessageCircle className="w-4 h-4" />

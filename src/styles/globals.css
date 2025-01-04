@@ -123,10 +123,10 @@
   --color-message-ai-bg: var(--pale-yellow-200);
   --color-message-ai-text: var(--pale-yellow-900);
   
-  --color-tooltip-bg: white;
+  --color-tooltip-bg: var(--pale-yellow-200);
   --color-tooltip-text: var(--muted-blue-800);
-  --color-tooltip-border: var(--pale-blue-200);
-  --color-tooltip-hover: var(--pale-blue-100);
+  --color-tooltip-border: var(--muted-blue-800);
+  --color-tooltip-hover: var(--pale-yellow-400);
   
   --color-accent: var(--muted-blue-200);
   --color-success: var(--pale-green-500);
@@ -222,10 +222,10 @@
   --color-message-ai-bg: var(--pale-yellow-800);
   --color-message-ai-text: var(--pale-yellow-100);
   
-  --color-tooltip-bg: var(--muted-blue-800);
+  --color-tooltip-bg: var(--pale-yellow-900);
   --color-tooltip-text: var(--pale-blue-100);
   --color-tooltip-border: var(--muted-blue-700);
-  --color-tooltip-hover: var(--pale-blue-100);
+  --color-tooltip-hover: var(--pale-yellow-700);
   
   --color-accent: var(--muted-blue-300);
   --color-success: var(--pale-green-400);
