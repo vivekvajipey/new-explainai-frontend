@@ -27,7 +27,7 @@ export function DocumentHeader({
         <p className="text-doc-subtitle">
           Chunk {currentChunk} of {totalChunks}
         </p>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 document-navigation">
           <button
             onClick={onPrevious}
             disabled={currentChunk === 1}

@@ -9,6 +9,8 @@ import { useMainConversation } from '@/hooks/useMainConversation';
 import { useChunkConversations } from '@/hooks/useChunkConversation'; // Import the new hook
 import { Highlight } from '@/components/document/types'; // Import Highlight type
 import { useGoogleAnalytics } from '@/hooks/useGoogleAnalytics'; // Import the new hook
+import Joyride from 'react-joyride';
+import { useTutorialTour } from '@/hooks/useTutorialTour';
 
 export function DocumentPage({ documentId }: { documentId: string }) {
   // Core document state
@@ -19,6 +21,7 @@ export function DocumentPage({ documentId }: { documentId: string }) {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [lastCreatedConversationId, setLastCreatedConversationId] = useState<string | null>(null);
   const { mainConversationId, error: mainError } = useMainConversation(documentId);
+  const { steps, runTour, handleTourCallback } = useTutorialTour();
 
   const [isConversationCollapsed, setIsConversationCollapsed] = useState(false);
 
@@ -147,36 +150,50 @@ export function DocumentPage({ documentId }: { documentId: string }) {
   }
 
   return (
-    <div className="flex h-screen">
-      <div className={`transition-all duration-300 ${isConversationCollapsed ? 'w-full' : 'w-1/2'}`}>
-        <DocumentViewer
-          chunk={currentChunk}
-          highlights={currentHighlights}
-          onCreateHighlight={handleHighlightCreate}
-          onHighlightClick={handleHighlightClick}
-          onChunkChange={handleChunkChange}
-          currentChunkIndex={currentChunkIndex}
-          totalChunks={metadata.meta_data.chunks_count}
-          documentTitle={metadata.title}
-          isCollapsed={isConversationCollapsed}
-          onToggleCollapse={() => setIsConversationCollapsed(!isConversationCollapsed)}
-        />
+    <>
+      <Joyride
+        steps={steps}
+        run={runTour}
+        continuous
+        showSkipButton
+        styles={{
+          options: {
+            primaryColor: '#000'
+          }
+        }}
+        callback={handleTourCallback}
+      />
+      <div className="flex h-screen">
+        <div className={`document-viewer transition-all duration-300 ${isConversationCollapsed ? 'w-full' : 'w-1/2'}`}>
+          <DocumentViewer
+            chunk={currentChunk}
+            highlights={currentHighlights}
+            onCreateHighlight={handleHighlightCreate}
+            onHighlightClick={handleHighlightClick}
+            onChunkChange={handleChunkChange}
+            currentChunkIndex={currentChunkIndex}
+            totalChunks={metadata.meta_data.chunks_count}
+            documentTitle={metadata.title}
+            isCollapsed={isConversationCollapsed}
+            onToggleCollapse={() => setIsConversationCollapsed(!isConversationCollapsed)}
+          />
+        </div>
+        <div
+          className={`transition-all duration-300 ${
+            isConversationCollapsed ? 'w-0 overflow-hidden' : 'w-1/2'
+          }`}
+        >
+          <ConversationContainer
+            documentId={documentId}
+            currentSequence={currentChunk && currentChunk.sequence.toString()}
+            activeConversationId={activeConversationId}
+            onConversationChange={setActiveConversationId}
+            mainConversationId={mainConversationId}
+            mainError={mainError}
+            chunkConversations={chunkConversations}
+          />
+        </div>
       </div>
-      <div 
-        className={`transition-all duration-300 ${
-          isConversationCollapsed ? 'w-0 overflow-hidden' : 'w-1/2'
-        }`}
-      >
-        <ConversationContainer 
-          documentId={documentId}
-          currentSequence={currentChunk && currentChunk.sequence.toString()}
-          activeConversationId={activeConversationId}
-          onConversationChange={setActiveConversationId}
-          mainConversationId={mainConversationId}
-          mainError={mainError}
-          chunkConversations={chunkConversations}
-        />
-      </div>
-    </div>
+    </>
   );
 }
