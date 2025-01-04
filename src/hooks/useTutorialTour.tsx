@@ -15,7 +15,7 @@ export const useTutorialTour = () => {
   const steps: Step[] = [
     {
       target: '.document-viewer',
-      content: 'This is where you read your document.',
+      content: 'This is where your chunked text is displayed.',
       disableBeacon: true,
       placement: 'right' as const,
     },
@@ -26,7 +26,7 @@ export const useTutorialTour = () => {
     },
     {
       target: '.main-conversation',
-      content: 'This is your main conversation space. As you read through the document, you can ask questions here about anything you have read - even across multiple chunks. The AI will keep track of your reading context.',
+      content: 'This is your main conversation space. As you move through the document, you can ask anything in one continuous flow.',
       placement: 'left' as const,
     },
     {
