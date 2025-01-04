@@ -15,22 +15,22 @@ export const useTutorialTour = () => {
   const steps: Step[] = [
     {
       target: '.document-viewer',
-      content: 'This is where you read your document...',
+      content: 'This is where you read your document.',
       disableBeacon: true,
       placement: 'right' as const,
     },
     {
       target: '.document-navigation',
-      content: 'Use these controls to move between different chunks...',
+      content: 'Use these controls to move between different chunks of your document. Chunk-specific conversations will change when you navigate.',
       placement: 'bottom' as const,
     },
     {
       target: '.main-conversation',
-      content: 'This is your main conversation space...',
+      content: 'This is your main conversation space. As you read through the document, you can ask questions here about anything you have read - even across multiple chunks. The AI will keep track of your reading context.',
       placement: 'left' as const,
     },
     {
-      target: '.prose',
+      target: '.document-viewer',
       // Simply use a <div> instead of <Content>
       content: (
         <div>
@@ -52,11 +52,11 @@ export const useTutorialTour = () => {
           </p>
         </div>
       ) as unknown as string,
-      placement: 'left' as const,
+      placement: 'right' as const,
     },
     {
       target: '.suggested-questions',
-      content: 'Not sure what to ask? Try these suggested questions...',
+      content: 'Not sure what to ask? Try these suggested questions that are tailored to the current section you are reading.',
       placement: 'top' as const,
     },
   ];
