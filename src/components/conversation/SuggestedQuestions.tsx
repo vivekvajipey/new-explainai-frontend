@@ -28,7 +28,7 @@ export function SuggestedQuestions({
   if (isLoading || !questions.length) return null;
 
   return (
-    <div className={`px-6 py-4 bg-doc-bg/50 ${className}`}>
+    <div className={`suggested-questions px-6 py-4 bg-doc-bg/50 ${className}`}>
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-doc-text">
           Suggested questions

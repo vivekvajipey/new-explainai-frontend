@@ -111,8 +111,11 @@ export function DocumentContent({
 
   return (
     <div className="flex-1 overflow-y-auto">
+      <div className="highlight-instruction text-sm text-gray-500 px-6 pt-2 italic">
+        Pro tip: Select any text to start a focused conversation
+      </div>
       <div
-        className="prose max-w-none p-6 h-full"
+        className="prose max-w-none p-6 h-full highlighting-area"
         onMouseUp={handleTextSelection}
       >
         <pre className="whitespace-pre-wrap font-palatino text-doc-text bg-transparent m-0 p-0">

@@ -16,12 +16,14 @@ export default function MainConversation({
     type: 'main',
     chunkId: currentChunkId
   };
-
+  
   return (
-    <BaseConversation
-      conversationId={conversationId}
-      messageSendConfig={messageSendConfig}
-      placeholder="Ask about the entire document..."
-    />
+    <div className="main-conversation h-full">
+      <BaseConversation
+        conversationId={conversationId}
+        messageSendConfig={messageSendConfig}
+        placeholder="Ask about the entire document..."
+      />
+    </div>
   );
 }
