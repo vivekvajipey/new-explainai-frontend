@@ -12,7 +12,7 @@ import {
   GenerateQuestionsCompleted,
   GenerateQuestionsRequest,
 } from './types';
-import { MessageRole, Question } from '@/types/conversation';  // This line is already correct
+import { MessageRole, Question, RegenerateQuestionsResponse } from '@/types/conversation';  // This line is already correct
 import { EXAMPLE_DOCUMENT_IDS } from '@/lib/constants';
 
 const WS_BASE_URL = 'wss://explainai-new-528ec8eb814a.herokuapp.com';
@@ -453,6 +453,25 @@ export class ConversationWebSocket {
       'conversation.questions.list',
       'conversation.questions.list.completed',
       { conversation_id: conversationId }
+    );
+    return response.questions;
+  }
+
+  async regenerateQuestions(
+    conversationId: string,
+    conversationType: 'main' | 'highlight',
+    options: {
+      chunkId?: string;
+    } = {}
+  ): Promise<Question[]> {
+    const response = await this.sendAndWait<RegenerateQuestionsResponse>(
+      'conversation.questions.regenerate',
+      'conversation.questions.regenerate.completed',
+      {
+        conversation_id: conversationId,
+        conversation_type: conversationType,
+        chunk_id: options.chunkId
+      }
     );
     return response.questions;
   }
