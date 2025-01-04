@@ -1,5 +1,7 @@
 // components/conversation/SuggestedQuestions.tsx
 import { useGoogleAnalytics } from '@/hooks/useGoogleAnalytics';
+import { ArrowPathIcon } from '@heroicons/react/24/outline';
+import { useState } from 'react';
 
 interface Question {
   id: string;
@@ -12,7 +14,9 @@ interface SuggestedQuestionsProps {
   isCollapsed: boolean;
   onCollapse: () => void;
   onQuestionSelect: (question: Question) => Promise<void>;
+  onRegenerate: () => Promise<void>;
   className?: string;
+  isStreaming: boolean;  // Add this
 }
 
 export function SuggestedQuestions({
@@ -21,29 +25,90 @@ export function SuggestedQuestions({
   isCollapsed,
   onCollapse,
   onQuestionSelect,
-  className = ''
+  onRegenerate,
+  className = '',
+  isStreaming,
 }: SuggestedQuestionsProps) {
   const { trackEvent } = useGoogleAnalytics();
-  
-  if (isLoading || !questions.length) return null;
+  const [isRegenerating, setIsRegenerating] = useState(false);
+
+  const handleRegenerate = async () => {
+    console.log('Starting regeneration');
+    setIsRegenerating(true);
+    try {
+      await onRegenerate();
+    } finally {
+      console.log('Finishing regeneration');
+      setIsRegenerating(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className={`p-4 ${className}`}>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm text-doc-content-text font-medium">
+            Loading questions...
+          </h3>
+        </div>
+      </div>
+    );
+  }
+
+  if (!questions.length) {
+    return (
+      <div className={`p-4 ${className}`}>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm text-doc-content-text font-medium">
+            All questions asked
+          </h3>
+          <button
+            onClick={handleRegenerate}
+            disabled={isRegenerating}
+            className="text-muted-blue-400 hover:text-muted-blue-600 transition-colors
+            disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+            title="Regenerate questions"
+          >
+            <ArrowPathIcon
+              className={`h-4 w-4 ${isRegenerating ? 'animate-spin' : ''}`}
+            />
+            Generate new questions
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className={`suggested-questions px-6 py-4 bg-doc-bg/50 ${className}`}>
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-doc-text">
+    <div className={`p-4 ${className}`}>
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-sm text-doc-content-text font-medium">
           Suggested questions
         </h3>
+        <div className="flex gap-2">
         <button
-          onClick={onCollapse}
-          className="text-sm font-medium text-button-secondary-text hover:text-button-secondary-hover transition-colors duration-200"
-          aria-label={isCollapsed ? 'Show suggested questions' : 'Hide suggested questions'}
+          onClick={handleRegenerate}
+          disabled={isRegenerating}
+          className="text-muted-blue-400 hover:text-muted-blue-600 transition-colors
+          disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
         >
-          {isCollapsed ? 'Show' : 'Hide'}
+          <ArrowPathIcon
+            className={`h-4 w-4 ${isRegenerating ? 'animate-spin' : ''}`}
+          />
+          Generate new questions
         </button>
-      </div>
 
+          <button
+            onClick={onCollapse}
+            className="text-muted-blue-400 hover:text-muted-blue-600 transition-colors"
+          >
+            {isCollapsed ? 'Show' : 'Hide'}
+          </button>
+        </div>
+      </div>
+      
       {!isCollapsed && (
-        <div className="grid gap-2.5 max-w-3xl mx-auto">
+        <div className="flex flex-col gap-2">
           {questions.map((question) => (
             <button
               key={question.id}
@@ -51,19 +116,14 @@ export function SuggestedQuestions({
                 trackEvent('Conversation', 'suggested_question_selected', question.content);
                 await onQuestionSelect(question);
               }}
-              className="w-full text-left p-3.5 rounded-xl 
-                bg-card-bg hover:bg-card-hover
-                text-doc-text text-sm
-                border border-card-border/40 hover:border-card-border
-                transition-all duration-200 ease-in-out
-                shadow-sm hover:shadow-md
-                transform hover:-translate-y-0.5
-                focus:outline-none focus:ring-2 focus:ring-accent/30"
+              disabled={isStreaming || isRegenerating}  // Disable during streaming or regeneration
+              className={`text-left p-2 rounded-lg bg-doc-content-bg 
+                        text-doc-content-text text-sm transition-colors border border-doc-content-border
+                        ${isStreaming || isRegenerating 
+                          ? 'opacity-50 cursor-not-allowed' 
+                          : 'hover:bg-doc-nav-button-hover'}`}
             >
-              <div className="flex items-center">
-                <span className="mr-2">💭</span>
-                {question.content}
-              </div>
+              {question.content}
             </button>
           ))}
         </div>

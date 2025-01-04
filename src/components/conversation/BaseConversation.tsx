@@ -24,6 +24,18 @@ export default function BaseConversation({
   placeholder = 'Type a message...',
   className = '',
 }: BaseConversationProps) {
+  const {
+    questions,
+    isLoading: questionsLoading,
+    isCollapsed,
+    setIsCollapsed,
+    fetchQuestions,
+    regenerateQuestions
+  } = useConversationQuestions(
+    conversationId,
+    messageSendConfig.type,
+    messageSendConfig.chunkId
+  );
   const { conversationSocket } = useSocket();
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -35,13 +47,6 @@ export default function BaseConversation({
     isStreaming: false,
     content: ''
   });
-  const {
-    questions,
-    isLoading: questionsLoading,
-    isCollapsed,
-    setIsCollapsed,
-    fetchQuestions
-  } = useConversationQuestions(conversationId);
 
   const handleQuestionSelect = async (question: { id: string; content: string }) => {
     try {
@@ -161,6 +166,8 @@ export default function BaseConversation({
           isCollapsed={isCollapsed}
           onCollapse={() => setIsCollapsed(!isCollapsed)}
           onQuestionSelect={handleQuestionSelect}
+          onRegenerate={regenerateQuestions}
+          isStreaming={streamingState.isStreaming}  // Pass streaming state
           className="border-b border-doc-content-border"
         />
         <MessageList

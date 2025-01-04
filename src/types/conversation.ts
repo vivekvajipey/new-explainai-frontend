@@ -30,3 +30,9 @@ export interface Question {
     chunk_id?: string;
   };
 }
+
+export interface RegenerateQuestionsResponse {
+  conversation_id: string;
+  questions: Question[];
+  request_id?: string;
+}

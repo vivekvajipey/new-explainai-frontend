@@ -3,7 +3,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSocket } from '@/contexts/SocketContext';
 import { Question } from '@/types/conversation'; // Import the Question interface
 
-export function useConversationQuestions(conversationId: string) {
+export function useConversationQuestions(
+  conversationId: string,
+  conversationType: 'main' | 'highlight',
+  chunkId?: string
+) {
   const { conversationSocket } = useSocket();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -25,6 +29,25 @@ export function useConversationQuestions(conversationId: string) {
     }
   }, [conversationId, conversationSocket]);
 
+  const regenerateQuestions = useCallback(async () => {
+    if (!conversationSocket || !conversationId) return;
+    try {
+      setIsLoading(true);
+      await conversationSocket.regenerateQuestions(
+        conversationId,
+        conversationType,
+        { chunkId }
+      );
+      await fetchQuestions(); // Fetch new questions after regeneration
+    } catch (err) {
+      console.error('Failed to regenerate questions:', err);
+      setError(err instanceof Error ? err.message : 'Failed to regenerate questions');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [conversationId, conversationType, chunkId, conversationSocket, fetchQuestions]);
+
+
   useEffect(() => {
     fetchQuestions();
   }, [fetchQuestions]);
@@ -35,6 +58,7 @@ export function useConversationQuestions(conversationId: string) {
     error,
     isCollapsed,
     setIsCollapsed,
-    fetchQuestions  // Expose the fetch function
+    fetchQuestions,
+    regenerateQuestions  // Expose the fetch function
   };
 }
