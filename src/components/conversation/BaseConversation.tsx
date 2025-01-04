@@ -61,29 +61,24 @@ export default function BaseConversation({
     console.log('Streaming state updated:', streamingState);
   }, [streamingState]);
 
-  useEffect(() => {
+  const loadMessages = async () => {
     if (!conversationId || !conversationSocket) return;
     
-    const loadMessages = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const response = await conversationSocket.getMessages(conversationId);
-        // Ensure we cast the role to MessageRole
-        setMessages(response.messages.map(msg => ({
-          ...msg,
-          role: msg.role as MessageRole
-        })));
-      } catch (err) {
-        console.error('Failed to load messages:', err);
-        setError('Failed to load messages');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadMessages();
-  }, [conversationId, conversationSocket]);
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response = await conversationSocket.getMessages(conversationId);
+      setMessages(response.messages.map(msg => ({
+        ...msg,
+        role: msg.role as MessageRole
+      })));
+    } catch (err) {
+      console.error('Failed to load messages:', err);
+      setError('Failed to load messages');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const replaceMessage = (finalMessage: Message) => {
     setMessages(prev =>
@@ -147,9 +142,14 @@ export default function BaseConversation({
       if (err instanceof Error && err.message.includes('demo message limit')) {
         setIsDemoLimitModalOpen(true);
         trackEvent('Demo', 'demo_limit_reached');
-      } else {
-        setError(err instanceof Error ? err.message : 'Failed to send message');
+        return; // Don't reload for demo limit errors
       }
+  
+      // For other errors, try reloading to sync with backend
+      setIsLoading(true);
+      setError('Reloading messages...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      await loadMessages();
     }
   };
 
