@@ -15,7 +15,12 @@ export const useTutorialTour = () => {
   const steps: Step[] = [
     {
       target: '.document-viewer',
-      content: 'This is where your text is displayed. It has been split into sections called "chunks".',
+      content: (
+        <>
+          <p>This is where your text is displayed.</p>
+          <p>It has been split into sections called &ldquo;chunks&rdquo;.</p>
+        </>
+      ),
       disableBeacon: true,
       placement: 'right' as const,
     },
@@ -35,13 +40,13 @@ export const useTutorialTour = () => {
       content: (
         <div>
           <p>Start focused conversations by highlighting text:</p>
-          <div className="mt-2 p-3 bg-doc-bg rounded-lg border border-doc-content-border">
+          <div className="mt-2 p-3 bg-doc-bg rounded-lg border border-doc-border">
             <div className="flex items-center">
-              <span className="bg-doc-highlight-bg border border-doc-highlight-border px-2 py-1 rounded">
+              <span className="text-doc-text bg-doc-highlight-bg border border-doc-highlight-border px-2 py-1 rounded">
                 vocabulary word
               </span>
               <span className="mx-2">→</span>
-              <div className="flex items-center text-sm text-doc-text">
+              <div className="flex items-center text-sm text-tooltip-text bg-tooltip-bg hover:bg-tooltip-hover rounded-lg">
                 <MessageCircle className="w-4 h-4 mr-1" />
                 <span>Chat about this</span>
               </div>
