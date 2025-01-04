@@ -15,7 +15,7 @@ export const useTutorialTour = () => {
   const steps: Step[] = [
     {
       target: '.document-viewer',
-      content: 'This is where your chunked text is displayed.',
+      content: 'This is where your text is displayed. It has been split into sections called "chunks".',
       disableBeacon: true,
       placement: 'right' as const,
     },
