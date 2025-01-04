@@ -16,6 +16,7 @@ interface SuggestedQuestionsProps {
   onQuestionSelect: (question: Question) => Promise<void>;
   onRegenerate: () => Promise<void>;
   className?: string;
+  isStreaming: boolean;  // Add this
 }
 
 export function SuggestedQuestions({
@@ -25,7 +26,8 @@ export function SuggestedQuestions({
   onCollapse,
   onQuestionSelect,
   onRegenerate,
-  className = ''
+  className = '',
+  isStreaming,
 }: SuggestedQuestionsProps) {
   const { trackEvent } = useGoogleAnalytics();
   const [isRegenerating, setIsRegenerating] = useState(false);
@@ -114,8 +116,12 @@ export function SuggestedQuestions({
                 trackEvent('Conversation', 'suggested_question_selected', question.content);
                 await onQuestionSelect(question);
               }}
-              className="text-left p-2 rounded-lg bg-doc-content-bg hover:bg-doc-nav-button-hover
-                        text-doc-content-text text-sm transition-colors border border-doc-content-border"
+              disabled={isStreaming || isRegenerating}  // Disable during streaming or regeneration
+              className={`text-left p-2 rounded-lg bg-doc-content-bg 
+                        text-doc-content-text text-sm transition-colors border border-doc-content-border
+                        ${isStreaming || isRegenerating 
+                          ? 'opacity-50 cursor-not-allowed' 
+                          : 'hover:bg-doc-nav-button-hover'}`}
             >
               {question.content}
             </button>

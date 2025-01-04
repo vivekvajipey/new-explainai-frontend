@@ -167,6 +167,7 @@ export default function BaseConversation({
           onCollapse={() => setIsCollapsed(!isCollapsed)}
           onQuestionSelect={handleQuestionSelect}
           onRegenerate={regenerateQuestions}
+          isStreaming={streamingState.isStreaming}  // Pass streaming state
           className="border-b border-doc-content-border"
         />
         <MessageList
