@@ -101,10 +101,24 @@ export function UploadHandler({
           className={`px-6 py-3 border border-transparent text-base font-medium rounded-lg 
                    text-button-upload-text bg-button-upload-bg hover:bg-button-upload-hover
                    focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-input-focus 
-                   transition-all duration-200 shadow-sm
+                   transition-all duration-200 shadow-sm flex items-center gap-2
                    ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
           disabled={isUploading}
         >
+          <svg
+            className="h-5 w-5"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"
+            />
+          </svg>
           {showUrlInput ? 'Hide URL' : 'Import from Website'}
         </button>
       </div>
