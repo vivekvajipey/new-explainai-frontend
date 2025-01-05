@@ -105,7 +105,7 @@ export function UploadHandler({
                    ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
           disabled={isUploading}
         >
-          {showUrlInput ? 'Hide URL' : 'URL Upload'}
+          {showUrlInput ? 'Hide URL' : 'Import from Website'}
         </button>
       </div>
 
@@ -134,7 +134,7 @@ export function UploadHandler({
                        transition-all duration-200 shadow-sm
                        ${(isUploading || !url) ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              {isUploading ? 'Uploading...' : 'Upload URL'}
+              {isUploading ? 'Importing...' : 'Import from URL'}
             </button>
           </div>
         </form>
