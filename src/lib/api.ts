@@ -33,7 +33,11 @@ export async function uploadDocument(file: File, token: string | null | undefine
   });
 
   if (!response.ok) {
-    throw new Error('Failed to upload document');
+    const errorText = await response.text();
+    if (response.status === 413) {
+      throw new Error('File is too large. Please upload a smaller document (maximum size: 10MB).');
+    }
+    throw new Error(`Failed to upload document: ${errorText}`);
   }
 
   return response.json();

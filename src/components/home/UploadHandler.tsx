@@ -13,22 +13,40 @@ export function UploadHandler({
 }: UploadHandlerProps) {
   const [url, setUrl] = useState('');
   const [showUrlInput, setShowUrlInput] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check file size before uploading (10MB = 10 * 1024 * 1024 bytes)
+      if (file.size > 10 * 1024 * 1024) {
+        setError('File is too large. Please upload a smaller document (maximum size: 10MB).');
+        return;
+      }
+      setError(null);
+      try {
+        await onUpload(e);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to upload file');
+      }
+    }
+  };
 
   const handleUrlSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (url) {
       try {
+        setError(null);
         // Add https:// if no protocol is specified
         let processedUrl = url;
         if (!/^https?:\/\//i.test(url)) {
           processedUrl = `https://${url}`;
         }
-        console.log('Submitting processed URL:', processedUrl);
         await onUrlUpload(processedUrl);
         setUrl('');
         setShowUrlInput(false);
-      } catch (error) {
-        console.error('Error in handleUrlSubmit:', error);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to upload from URL');
       }
     }
   };
@@ -38,7 +56,7 @@ export function UploadHandler({
       <div className="flex gap-2 w-full">
         <input
           type="file"
-          onChange={onUpload}
+          onChange={handleFileChange}
           className="hidden"
           id="file-upload"
           accept=".pdf,.doc,.docx,.txt"
@@ -122,6 +140,12 @@ export function UploadHandler({
           {showUrlInput ? 'Hide URL' : 'Import from Website'}
         </button>
       </div>
+
+      {error && (
+        <div className="w-full text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg p-3">
+          {error}
+        </div>
+      )}
 
       {showUrlInput && (
         <form onSubmit={handleUrlSubmit} className="w-full">
