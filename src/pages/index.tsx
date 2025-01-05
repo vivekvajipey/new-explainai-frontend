@@ -3,7 +3,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { uploadDocument, listDocuments, deleteDocument, listApprovedUsers, approveUser, removeUserApproval } from '@/lib/api';
+import { uploadDocument, uploadDocumentUrl, listDocuments, deleteDocument, listApprovedUsers, approveUser, removeUserApproval } from '@/lib/api';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { Document } from '@/types';
 
@@ -94,8 +94,15 @@ export default function Home() {
     fetchApprovedUsers();
   }, [user, token]);
 
+  console.log('Home component state:', {
+    user: !!user,
+    token: !!token,
+    isDemo,
+    isUploading
+  });
+
   // Keep all your existing handlers exactly the same
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !token) {
       if (!token) {
@@ -103,22 +110,20 @@ export default function Home() {
       }
       return;
     }
-  
+
     trackEvent('Authenticated', 'upload_started');
     setIsUploading(true);
     setUploadSuccess(false);
-  
+    
     try {
-      // Start the upload and get the document ID directly from the response
       const response = await uploadDocument(file, token);
       const documentId = response.document_id;
-  
       console.log('Upload successful, document ID:', documentId);
-  
+
       // Fetch the updated list of documents
       const docs = await listDocuments(token);
       setUserDocuments(docs);
-  
+
       // Find and select the new document
       const newDoc = docs.find((doc) => doc.id === documentId);
       if (newDoc) {
@@ -134,12 +139,57 @@ export default function Home() {
     } catch (error) {
       console.error('Upload failed:', error);
       setUploadSuccess(false);
+      alert('Failed to upload document. Please try again.');
     } finally {
       setIsUploading(false);
     }
   };
-  
-  
+
+  const handleUrlUpload = async (url: string) => {
+    console.log('handleUrlUpload called with URL:', url, {
+      user: !!user,
+      token: !!token,
+      isDemo
+    });
+    
+    if (!token) {
+      console.log('No token available, please log in');
+      return;
+    }
+
+    trackEvent('Authenticated', 'url_upload_started');
+    setIsUploading(true);
+    setUploadSuccess(false);
+    
+    try {
+      console.log('Making uploadDocumentUrl API call with URL:', url);
+      const response = await uploadDocumentUrl(url, token);
+      const documentId = response.document_id;
+      console.log('URL upload successful, document ID:', documentId);
+
+      // Fetch the updated list of documents
+      const docs = await listDocuments(token);
+      setUserDocuments(docs);
+
+      // Find and select the new document
+      const newDoc = docs.find((doc) => doc.id === documentId);
+      if (newDoc) {
+        setSelectedText(newDoc);
+        setUploadSuccess(true);
+        // Redirect to the new document
+        router.push(`/documents/${newDoc.id}`);
+      } else {
+        console.error('Uploaded document not found in updated document list.');
+        setUploadSuccess(false);
+      }
+    } catch (error) {
+      console.error('URL upload failed:', error);
+      setUploadSuccess(false);
+      alert('Failed to upload document from URL. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleApproveUser = async () => {
     if (!token || !newApprovalEmail) return;
@@ -243,10 +293,13 @@ export default function Home() {
                     setDocumentToDelete={setDocumentToDelete}
                   />
                   {user && !isDemo && (
-                    <UploadHandler
-                      onUpload={handleFileUpload}
-                      isUploading={isUploading}
-                    />
+                    <div className="flex flex-col gap-8 w-full">
+                      <UploadHandler
+                        onUpload={handleUpload}
+                        onUrlUpload={handleUrlUpload}
+                        isUploading={isUploading}
+                      />
+                    </div>
                   )}
                   {selectedText && (
                     <button

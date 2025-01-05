@@ -12,10 +12,11 @@ import {
   GenerateQuestionsCompleted,
   GenerateQuestionsRequest,
 } from './types';
-import { MessageRole, Question, RegenerateQuestionsResponse } from '@/types/conversation';  // This line is already correct
-import { EXAMPLE_DOCUMENT_IDS } from '@/lib/constants';
+import { MessageRole, Question, RegenerateQuestionsResponse } from '@/types/conversation';
+import { EXAMPLE_DOCUMENT_IDS, API_BASE_URL } from '@/lib/constants';
 
-const WS_BASE_URL = 'wss://explainai-new-528ec8eb814a.herokuapp.com';
+// Dynamically construct WebSocket URL from API_BASE_URL
+const WS_BASE_URL = API_BASE_URL.replace(/^http/, 'ws');
 
 export class ConversationWebSocket {
   private ws: WebSocket | null = null;
@@ -46,9 +47,14 @@ export class ConversationWebSocket {
 
   private async connect(): Promise<void> {
     console.log('ConversationWebSocket: Connecting...');
+    console.log('API_BASE_URL:', API_BASE_URL);
+    console.log('WS_BASE_URL:', WS_BASE_URL);
+    
     const wsUrl = `${WS_BASE_URL}/api/conversations/stream/${this.documentId}${
       this.token ? `?token=${this.token.replace('Bearer ', '')}` : ''
     }`;
+    
+    console.log('Connecting to WebSocket URL:', wsUrl);
 
     return new Promise((resolve, reject) => {
       this.ws = new WebSocket(wsUrl);
