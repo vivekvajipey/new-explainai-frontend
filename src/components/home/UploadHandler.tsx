@@ -16,12 +16,15 @@ export function UploadHandler({
 
   const handleUrlSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('handleUrlSubmit called with URL:', url);
     if (url) {
       try {
-        console.log('Calling onUrlUpload with URL:', url);
-        await onUrlUpload(url);
-        console.log('URL upload completed');
+        // Add https:// if no protocol is specified
+        let processedUrl = url;
+        if (!/^https?:\/\//i.test(url)) {
+          processedUrl = `https://${url}`;
+        }
+        console.log('Submitting processed URL:', processedUrl);
+        await onUrlUpload(processedUrl);
         setUrl('');
         setShowUrlInput(false);
       } catch (error) {
@@ -108,15 +111,20 @@ export function UploadHandler({
 
       {showUrlInput && (
         <form onSubmit={handleUrlSubmit} className="w-full">
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2">
             <input
-              type="url"
+              type="text"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="Enter document URL"
+              placeholder="Enter document URL (e.g. ssi.inc)"
               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-input-focus"
+              pattern="^(https?:\/\/)?.+"
+              title="Enter a valid URL. The https:// will be added automatically if missing."
               required
             />
+            <div className="text-xs text-gray-500 ml-1">
+              {url && !/^https?:\/\//i.test(url) && 'https:// will be added automatically'}
+            </div>
             <button
               type="submit"
               disabled={isUploading || !url}
