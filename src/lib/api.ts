@@ -24,7 +24,7 @@ export async function uploadDocument(file: File, token: string | null | undefine
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/documents/upload`, {
+  const response = await fetch(`${API_BASE_URL}/api/documents/upload/file`, {
     method: 'POST',
     headers,
     body: formData,
