@@ -30,7 +30,8 @@ export default function BaseConversation({
     isCollapsed,
     setIsCollapsed,
     fetchQuestions,
-    regenerateQuestions
+    regenerateQuestions,
+    error: questionsError  // Rename to avoid conflict with message error
   } = useConversationQuestions(
     conversationId,
     messageSendConfig.type,
@@ -164,16 +165,17 @@ export default function BaseConversation({
   return (
     <>
       <div className={`flex flex-col h-full ${className}`}>
-        <SuggestedQuestions
-          questions={questions}
-          isLoading={questionsLoading}
-          isCollapsed={isCollapsed}
-          onCollapse={() => setIsCollapsed(!isCollapsed)}
-          onQuestionSelect={handleQuestionSelect}
-          onRegenerate={regenerateQuestions}
-          isStreaming={streamingState.isStreaming}  // Pass streaming state
-          className="border-b border-doc-content-border"
-        />
+      <SuggestedQuestions
+        questions={questions}
+        isLoading={questionsLoading}
+        isCollapsed={isCollapsed}
+        onCollapse={() => setIsCollapsed(!isCollapsed)}
+        onQuestionSelect={handleQuestionSelect}
+        onRegenerate={regenerateQuestions}
+        isStreaming={streamingState.isStreaming}
+        error={questionsError} // Add this from useConversationQuestions
+        className="border-b border-doc-content-border"
+      />
         <MessageList
           messages={messages}
           streamingState={streamingState}

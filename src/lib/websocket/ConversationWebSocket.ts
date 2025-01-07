@@ -31,6 +31,7 @@ export class ConversationWebSocket {
   private onError?: (error: WebSocketError) => void;
   private isDemoDocument: boolean;
   private readonly DEMO_MESSAGE_LIMIT = 5;
+  private readonly DEMO_QUESTION_LIMIT = 3;
 
   constructor(
     private readonly documentId: string,
@@ -177,6 +178,15 @@ export class ConversationWebSocket {
   public getRemainingDemoMessages(): number {
     if (!this.isDemoDocument) return 0;
     return Math.max(0, this.DEMO_MESSAGE_LIMIT - this.getDemoMessageCount());
+  }
+
+  private getDemoQuestionCount(): number {
+    return parseInt(localStorage.getItem('demo_question_generations') || '0');
+  }
+  
+  private incrementDemoQuestionCount(): void {
+    const count = this.getDemoQuestionCount();
+    localStorage.setItem('demo_question_generations', (count + 1).toString());
   }
  
   private async waitForConnection(): Promise<void> {
@@ -432,6 +442,14 @@ export class ConversationWebSocket {
       count?: number;
     } = {}
   ): Promise<string[]> {
+    if (this.isDemoDocument) {
+      const questionCount = this.getDemoQuestionCount();
+      if (questionCount >= this.DEMO_QUESTION_LIMIT) {
+        throw new Error('You have reached the question generation limit. Please sign in to continue.');
+      }
+      this.incrementDemoQuestionCount();
+    }
+
     const requestData: GenerateQuestionsRequest = {
       conversation_id: conversationId,
       conversation_type: conversationType,
@@ -464,6 +482,14 @@ export class ConversationWebSocket {
       chunkId?: string;
     } = {}
   ): Promise<Question[]> {
+    if (this.isDemoDocument) {
+      const questionCount = this.getDemoQuestionCount();
+      if (questionCount >= this.DEMO_QUESTION_LIMIT) {
+        throw new Error('You have reached the question generation limit. Please sign in to continue.');
+      }
+      this.incrementDemoQuestionCount();
+    }
+
     const response = await this.sendAndWait<RegenerateQuestionsResponse>(
       'conversation.questions.regenerate',
       'conversation.questions.regenerate.completed',

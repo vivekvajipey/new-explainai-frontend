@@ -17,6 +17,7 @@ interface SuggestedQuestionsProps {
   onRegenerate: () => Promise<void>;
   className?: string;
   isStreaming: boolean;  // Add this
+  error?: string | null;
 }
 
 export function SuggestedQuestions({
@@ -28,6 +29,7 @@ export function SuggestedQuestions({
   onRegenerate,
   className = '',
   isStreaming,
+  error,
 }: SuggestedQuestionsProps) {
   const { trackEvent } = useGoogleAnalytics();
   const [isRegenerating, setIsRegenerating] = useState(false);
@@ -86,6 +88,9 @@ export function SuggestedQuestions({
           Suggested questions
         </h3>
         <div className="flex gap-2">
+          <h3 className="text-sm text-red-500 font-medium">
+              {error}
+          </h3>
         <button
           onClick={handleRegenerate}
           disabled={isRegenerating}
