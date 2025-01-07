@@ -1,9 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { PDFPageSelector } from './PDFPageSelector';
 
 interface UploadHandlerProps {
-  onUpload: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
+  onUpload: (event: React.ChangeEvent<HTMLInputElement>, selectedPages?: number[]) => Promise<void>;
   onUrlUpload: (url: string) => Promise<void>;
   isUploading: boolean;
+}
+
+interface PendingFileState {
+  files: FileList;
+  target: HTMLInputElement;
 }
 
 export function UploadHandler({
@@ -14,21 +20,80 @@ export function UploadHandler({
   const [url, setUrl] = useState('');
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPageSelector, setShowPageSelector] = useState(false);
+  const [pendingFile, setPendingFile] = useState<PendingFileState | null>(null);
+
+  useEffect(() => {
+    console.log('State updated:', {
+      showPageSelector,
+      hasPendingFile: !!pendingFile,
+      pendingFileList: pendingFile?.files,
+      firstFile: pendingFile?.files?.[0]
+    });
+  }, [showPageSelector, pendingFile]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      console.log('File selected:', file.name, 'Type:', file.type);
+      
       // Check file size before uploading (10MB = 10 * 1024 * 1024 bytes)
       if (file.size > 10 * 1024 * 1024) {
         setError('File is too large. Please upload a smaller document (maximum size: 10MB).');
         return;
       }
       setError(null);
+
+      // If it's a PDF, show the page selector
+      if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+        console.log('PDF detected, showing page selector');
+        // Capture the files immediately
+        setPendingFile({
+          files: e.target.files!,
+          target: e.target
+        });
+        setShowPageSelector(true);
+      } else {
+        console.log('Non-PDF file, uploading directly');
+        // For non-PDF files, upload directly
+        try {
+          await onUpload(e);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'Failed to upload file');
+        }
+      }
+    }
+  };
+
+  const handlePageSelection = async (selectedPages: number[]) => {
+    if (pendingFile) {
       try {
-        await onUpload(e);
+        // Create a new synthetic event
+        const syntheticEvent = {
+          target: pendingFile.target,
+          currentTarget: pendingFile.target,
+          files: pendingFile.files,
+          preventDefault: () => {},
+          stopPropagation: () => {}
+        } as unknown as React.ChangeEvent<HTMLInputElement>;
+        
+        await onUpload(syntheticEvent, selectedPages);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to upload file');
+      } finally {
+        setShowPageSelector(false);
+        setPendingFile(null);
       }
+    }
+  };
+
+  const handlePageSelectorCancel = () => {
+    setShowPageSelector(false);
+    setPendingFile(null);
+    // Reset the file input
+    const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
     }
   };
 
@@ -134,7 +199,7 @@ export function UploadHandler({
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth="2"
-              d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"
+              d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"
             />
           </svg>
           {showUrlInput ? 'Hide URL' : 'Import from Website'}
@@ -176,6 +241,18 @@ export function UploadHandler({
             </button>
           </div>
         </form>
+      )}
+
+      {/* The PDFPageSelector */}
+      {showPageSelector && pendingFile?.files?.[0] && (
+        <div className="fixed inset-0 z-[100] bg-black bg-opacity-50">
+          <PDFPageSelector
+            file={pendingFile.files[0]}
+            onConfirm={handlePageSelection}
+            onCancel={handlePageSelectorCancel}
+            isOpen={showPageSelector}
+          />
+        </div>
       )}
     </div>
   );

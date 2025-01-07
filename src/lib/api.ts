@@ -17,9 +17,12 @@ interface ApprovedUser {
   last_login: string | null;
 }
 
-export async function uploadDocument(file: File, token: string | null | undefined): Promise<{ document_id: string }> {
+export async function uploadDocument(file: File, token: string | null | undefined, selectedPages?: number[]): Promise<{ document_id: string }> {
   const formData = new FormData();
   formData.append('file', file);
+  if (selectedPages) {
+    formData.append('pages', JSON.stringify(selectedPages));
+  }
 
   const headers: HeadersInit = {};
   if (token) {
