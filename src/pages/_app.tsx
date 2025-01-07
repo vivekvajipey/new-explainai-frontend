@@ -13,6 +13,7 @@ import type { AppProps } from 'next/app';
 import { useRouter } from "next/router";
 import Head from 'next/head';
 import { CostLimitProvider } from "@/contexts/CostLimitContext";
+import { MobileProvider } from "@/contexts/MobileContext";
 import { EXAMPLE_DOCUMENT_IDS } from "@/lib/constants";
 import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
 
@@ -216,15 +217,17 @@ export default function App({ Component, pageProps }: AppProps) {
         enableSystem
         disableTransitionOnChange
       >
-        <CostLimitProvider>
-          <AuthProvider>
-            <AuthInitializer />
-            <Header />
-            <main className="container mx-auto px-4 py-8">
-              <Component {...pageProps} />
-            </main>
-          </AuthProvider>
-        </CostLimitProvider>
+        <MobileProvider>
+          <CostLimitProvider>
+            <AuthProvider>
+              <AuthInitializer />
+              <Header />
+              <main className="container mx-auto px-4 py-8">
+                <Component {...pageProps} />
+              </main>
+            </AuthProvider>
+          </CostLimitProvider>
+        </MobileProvider>
       </ThemeProvider>
     </>
   );
