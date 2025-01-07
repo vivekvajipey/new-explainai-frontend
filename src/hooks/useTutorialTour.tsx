@@ -15,18 +15,13 @@ export const useTutorialTour = () => {
   const steps: Step[] = [
     {
       target: '.document-viewer',
-      content: (
-        <>
-          <p>This is where your text is displayed.</p>
-          <p>It has been split into sections called &ldquo;chunks&rdquo;.</p>
-        </>
-      ),
+      content: 'This is where a page of your text is displayed.',
       disableBeacon: true,
       placement: 'right' as const,
     },
     {
       target: '.document-navigation',
-      content: 'Use these controls to move between different chunks of your document. Chunk-specific conversations will change when you navigate.',
+      content: 'Use these controls to move between different pages of your document. Page-specific conversations will change when you navigate.',
       placement: 'bottom' as const,
     },
     {

@@ -25,7 +25,7 @@ export function DocumentHeader({
       <h1 className="text-3xl font-bold mb-2 text-doc-title">{title}</h1>
       <div className="flex items-center justify-between">
         <p className="text-doc-subtitle">
-          Chunk {currentChunk} of {totalChunks}
+          Page {currentChunk} of {totalChunks}
         </p>
         <div className="flex items-center space-x-2 document-navigation">
           <button
