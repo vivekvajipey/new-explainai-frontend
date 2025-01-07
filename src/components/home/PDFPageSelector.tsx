@@ -13,13 +13,6 @@ interface PDFPageSelectorProps {
   isOpen: boolean;
 }
 
-// Note: This interface is used for internal state management
-// when parsing page ranges like "1-3, 5-7"
-interface PageRange {
-  start: number;
-  end: number;
-}
-
 export function PDFPageSelector({
   file,
   onConfirm,
@@ -37,6 +30,7 @@ export function PDFPageSelector({
   const [rangeInput, setRangeInput] = useState<string>('');
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
   const [error, setError] = useState<string>('');
+  const [validationError, setValidationError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -80,52 +74,82 @@ export function PDFPageSelector({
     }
   }, [file, isOpen]);
 
-  const parsePageRanges = (input: string): number[] => {
+  const parsePageRanges = (input: string): { pages: number[], error?: string } => {
+    if (!input.trim()) {
+      return { pages: [], error: 'Please enter page numbers' };
+    }
+
     const pages = new Set<number>();
     const ranges = input.split(',').map(r => r.trim());
 
     for (const range of ranges) {
       if (range.includes('-')) {
-        const [start, end] = range.split('-').map(Number);
-        if (isNaN(start) || isNaN(end) || start < 1 || end > totalPages || start > end) {
-          throw new Error(`Invalid range: ${range}`);
+        const [startStr, endStr] = range.split('-').map(s => s.trim());
+        
+        // Allow partial ranges during typing
+        if (!endStr) {
+          return { pages: Array.from(pages), error: 'Incomplete range' };
         }
+        
+        const start = Number(startStr);
+        const end = Number(endStr);
+        
+        if (isNaN(start) || isNaN(end)) {
+          return { pages: Array.from(pages), error: 'Invalid number in range' };
+        }
+        
+        if (start < 1 || end > totalPages) {
+          return { pages: Array.from(pages), error: `Pages must be between 1 and ${totalPages}` };
+        }
+        
+        if (start > end) {
+          return { pages: Array.from(pages), error: 'Start page must be less than end page' };
+        }
+        
         for (let i = start; i <= end; i++) {
           pages.add(i);
         }
       } else {
+        if (!range) continue; // Skip empty entries
+        
         const page = Number(range);
-        if (isNaN(page) || page < 1 || page > totalPages) {
-          throw new Error(`Invalid page number: ${range}`);
+        if (isNaN(page)) {
+          return { pages: Array.from(pages), error: 'Invalid page number' };
         }
+        
+        if (page < 1 || page > totalPages) {
+          return { pages: Array.from(pages), error: `Pages must be between 1 and ${totalPages}` };
+        }
+        
         pages.add(page);
       }
     }
 
-    return Array.from(pages).sort((a, b) => a - b);
+    if (pages.size === 0) {
+      return { pages: [], error: 'Please select at least one page' };
+    }
+
+    if (pages.size > 8) {
+      return { pages: Array.from(pages), error: 'Please select no more than 8 pages' };
+    }
+
+    return { pages: Array.from(pages).sort((a, b) => a - b) };
   };
 
   const handleRangeInput = (value: string) => {
     setRangeInput(value);
-    try {
-      const pages = parsePageRanges(value);
-      setSelectedPages(pages);
-      setError('');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Invalid input');
-    }
+    const { pages, error } = parsePageRanges(value);
+    setSelectedPages(pages);
+    setValidationError(error || '');
   };
 
   const handleConfirm = () => {
-    if (selectedPages.length === 0) {
-      setError('Please select at least one page');
+    const { pages, error } = parsePageRanges(rangeInput);
+    if (error) {
+      setValidationError(error);
       return;
     }
-    if (selectedPages.length > 8) {
-      setError('Please select no more than 8 pages');
-      return;
-    }
-    onConfirm(selectedPages);
+    onConfirm(pages);
   };
 
   if (!isOpen) {
@@ -135,7 +159,7 @@ export function PDFPageSelector({
 
   console.log('Rendering PDFPageSelector UI');
   return (
-    <div className="flex items-center justify-center p-4 z-50">
+    <div className="flex items-center justify-center p-4 z-[9999]">
       <div className="bg-card-bg rounded-xl p-6 max-w-lg w-full shadow-xl border border-card-border">
         <h2 className="text-xl font-bold mb-4">Select Pages to Read</h2>
         
@@ -170,13 +194,13 @@ export function PDFPageSelector({
                        focus:ring-input-focus"
               placeholder="e.g., 1-3, 5, 7-8"
             />
-            {error && (
-              <p className="text-red-500 text-sm mt-1">{error}</p>
+            {validationError && (
+              <p className="text-amber-500 text-sm mt-1">{validationError}</p>
             )}
             <p className="text-sm text-sand-500 mt-2">
               Total pages: {totalPages} (Maximum 8 pages can be selected)
             </p>
-            {selectedPages.length > 0 && (
+            {selectedPages.length > 0 && !validationError && (
               <p className="text-sm text-sand-500 mt-1">
                 Selected: {selectedPages.join(', ')}
               </p>
@@ -196,7 +220,7 @@ export function PDFPageSelector({
             </button>
             <button
               onClick={handleConfirm}
-              disabled={selectedPages.length === 0 || selectedPages.length > 8}
+              disabled={!selectedPages.length || !!validationError}
               className="px-4 py-2 rounded-lg text-button-upload-text 
                        bg-button-upload-bg hover:bg-button-upload-hover
                        transition-colors duration-200

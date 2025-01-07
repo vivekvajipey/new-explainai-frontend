@@ -245,7 +245,7 @@ export function UploadHandler({
 
       {/* The PDFPageSelector */}
       {showPageSelector && pendingFile?.files?.[0] && (
-        <div className="fixed inset-0 z-[100] bg-black bg-opacity-50">
+        <div className="fixed inset-0 z-[9998] bg-black bg-opacity-50">
           <PDFPageSelector
             file={pendingFile.files[0]}
             onConfirm={handlePageSelection}
