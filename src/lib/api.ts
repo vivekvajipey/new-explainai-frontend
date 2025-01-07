@@ -1,7 +1,9 @@
 import { API_BASE_URL } from './constants';
 import { Document, DocumentResponse } from '@/types';
 
-const WS_BASE_URL = 'wss://explainai-new-528ec8eb814a.herokuapp.com';
+function getWsBaseUrl() {
+  return API_BASE_URL.replace(/^http/, 'ws');
+}
 
 interface MessageHandler {
   (data: unknown): void;
@@ -24,14 +26,48 @@ export async function uploadDocument(file: File, token: string | null | undefine
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/documents/upload`, {
+  const response = await fetch(`${API_BASE_URL}/api/documents/upload/file`, {
     method: 'POST',
     headers,
     body: formData,
   });
 
   if (!response.ok) {
-    throw new Error('Failed to upload document');
+    const errorText = await response.text();
+    if (response.status === 413) {
+      throw new Error('File is too large. Please upload a smaller document (maximum size: 10MB).');
+    }
+    throw new Error(`Failed to upload document: ${errorText}`);
+  }
+
+  return response.json();
+}
+
+export async function uploadDocumentUrl(url: string, token: string | null | undefined): Promise<{ document_id: string }> {
+  console.log('uploadDocumentUrl called with:', { url, hasToken: !!token });
+  
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json'
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  console.log('Making fetch request to:', `${API_BASE_URL}/api/documents/upload/url`);
+  const response = await fetch(`${API_BASE_URL}/api/documents/upload/url`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ url }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Upload URL failed:', {
+      status: response.status,
+      statusText: response.statusText,
+      error: errorText
+    });
+    throw new Error(`Failed to upload document from URL: ${errorText}`);
   }
 
   return response.json();
@@ -207,11 +243,12 @@ export class BaseWebSocket {
     this.isConnecting = true;
     this.connectionPromise = new Promise((resolve, reject) => {
       console.log(`Connecting to WebSocket for document ${this.documentId} at ${this.endpoint}...`);
+      console.log('Current API_BASE_URL:', API_BASE_URL);
       
       // Add /api/ to the path and handle token
-      const wsUrl = `${WS_BASE_URL}/api${this.endpoint}/${this.documentId}${this.token ? `?token=${this.token.replace('Bearer ', '')}` : ''}`;
+      const wsUrl = `${getWsBaseUrl()}/api${this.endpoint}/${this.documentId}${this.token ? `?token=${this.token.replace('Bearer ', '')}` : ''}`;
       
-      console.log('Connecting with URL:', wsUrl);
+      console.log('Connecting with WebSocket URL:', wsUrl);
       const ws = new WebSocket(wsUrl);
       const timeoutId = setTimeout(() => {
         cleanup();
@@ -421,7 +458,7 @@ export class DocumentWebSocket extends BaseWebSocket {
 }
 
 export function createWebSocket(documentId: string, token: string | null | undefined): WebSocket {
-  const wsUrl = new URL(`${WS_BASE_URL}/api/conversations/stream/${documentId}`);
+  const wsUrl = new URL(`${getWsBaseUrl()}/api/conversations/stream/${documentId}`);
   if (token) {
     wsUrl.searchParams.append('token', token);
   }
