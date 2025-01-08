@@ -449,7 +449,7 @@ export class ConversationWebSocket {
       chunk_id: options.chunkId,
       count: options.count || 3
     };
-  
+    console.log('Sending questions request with data:', JSON.stringify(requestData, null, 2));
     const response = await this.sendAndWait<GenerateQuestionsCompleted>(
       'conversation.questions.generate',
       'conversation.questions.generate.completed',

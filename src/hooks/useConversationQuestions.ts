@@ -8,6 +8,7 @@ export function useConversationQuestions(
   conversationType: 'main' | 'highlight',
   chunkId?: string
 ) {
+  console.log('useConversationQuestions called with:', { conversationId, conversationType, chunkId });
   const { conversationSocket } = useSocket();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
