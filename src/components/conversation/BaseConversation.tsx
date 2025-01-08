@@ -43,6 +43,7 @@ export default function BaseConversation({
   const [isLoading, setIsLoading] = useState(true);
   const [isDemoLimitModalOpen, setIsDemoLimitModalOpen] = useState(false);
   const { trackEvent } = useGoogleAnalytics();
+  const [useFullContext, setUseFullContext] = useState(false);
   const [streamingState, setStreamingState] = useState<StreamingState>({
     id: null,
     isStreaming: false,
@@ -139,7 +140,8 @@ export default function BaseConversation({
       
       await handleStreamingMessage(content, {
         ...messageSendConfig,
-        questionId
+        questionId,
+        useFullContext
       });
     } catch (err) {
       console.error('Failed to send message:', err);
@@ -165,17 +167,28 @@ export default function BaseConversation({
   return (
     <>
       <div className={`flex flex-col h-full ${className}`}>
-      <SuggestedQuestions
-        questions={questions}
-        isLoading={questionsLoading}
-        isCollapsed={isCollapsed}
-        onCollapse={() => setIsCollapsed(!isCollapsed)}
-        onQuestionSelect={handleQuestionSelect}
-        onRegenerate={regenerateQuestions}
-        isStreaming={streamingState.isStreaming}
-        error={questionsError} // Add this from useConversationQuestions
-        className="border-b border-doc-content-border"
-      />
+        <div className="flex items-center p-2 border-b border-doc-content-border">
+          <label className="flex items-center space-x-2 text-sm">
+            <input
+              type="checkbox"
+              checked={useFullContext}
+              onChange={(e) => setUseFullContext(e.target.checked)}
+              className="rounded border-gray-300"
+            />
+            <span>Use full document context</span>
+          </label>
+        </div>
+        <SuggestedQuestions
+          questions={questions}
+          isLoading={questionsLoading}
+          isCollapsed={isCollapsed}
+          onCollapse={() => setIsCollapsed(!isCollapsed)}
+          onQuestionSelect={handleQuestionSelect}
+          onRegenerate={regenerateQuestions}
+          isStreaming={streamingState.isStreaming}  // Pass streaming state
+          error={questionsError}
+          className="border-b border-doc-content-border"
+        />
         <MessageList
           messages={messages}
           streamingState={streamingState}

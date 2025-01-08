@@ -19,6 +19,7 @@ export interface MessageSendConfig {
   chunkId: string;
   highlightText?: string;
   questionId?: string;
+  useFullContext?: boolean;
 }
 
 export interface Question {

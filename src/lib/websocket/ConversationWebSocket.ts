@@ -340,9 +340,12 @@ export class ConversationWebSocket {
       onComplete: () => void;
       onError: (error: Error) => void;
     },
-    chunkId?: string,
-    type: string = 'main',
-    questionId?: string
+    config: {
+      chunkId?: string;
+      type?: string;
+      questionId?: string;
+      useFullContext?: boolean;
+    } = {}
   ): Promise<ConversationMessageSendCompleted> {
     console.log("This is a demo document?", this.isDemoDocument);
     if (this.isDemoDocument) {
@@ -353,11 +356,11 @@ export class ConversationWebSocket {
       }
       this.incrementDemoMessageCount();
     }
+  
     await this.waitForConnection();
     let fullMessage = '';
     let isComplete = false;
- 
-    // Set up token handler BEFORE sending message
+  
     const tokenHandler = (data: { token: string; request_id?: string }) => {
       console.log('Token received:', data.token);
       if (!isComplete) {
@@ -365,22 +368,24 @@ export class ConversationWebSocket {
         handlers.onToken(fullMessage);
       }
     };
-
+  
     this.onMessage('chat.token', tokenHandler);
- 
+  
     try {
+      console.log("Full context: ", config.useFullContext);
       const response = await this.sendAndWait<ConversationMessageSendCompleted>(
         'conversation.message.send',
         'conversation.message.send.completed',
         {
           conversation_id: conversationId,
           content,
-          chunk_id: chunkId,
-          conversation_type: type,  // Use the type parameter here
-          question_id: questionId   // Add question_id if provided
+          chunk_id: config.chunkId,
+          conversation_type: config.type || 'main',
+          question_id: config.questionId,
+          use_full_context: config.useFullContext
         }
       );
-
+  
       isComplete = true;
       handlers.onComplete();
       this.removeHandler('chat.token', tokenHandler);
