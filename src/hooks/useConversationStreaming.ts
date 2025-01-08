@@ -32,7 +32,7 @@ export function useConversationStreaming(
           onToken: (partialMessage: string) => {
             console.log('Setting streaming state:', partialMessage);
             setParentStreamingState({
-              id: conversationId,  // <- Let's log this
+              id: conversationId,
               isStreaming: true,
               content: partialMessage
             });
@@ -54,9 +54,12 @@ export function useConversationStreaming(
             });
           }
         },
-        config.chunkId,
-        config.type,
-        config.questionId  // Pass through the questionId
+        {
+          chunkId: config.chunkId,
+          type: config.type,
+          questionId: config.questionId,
+          useFullContext: config.useFullContext
+        }
       );
 
       // Add completed message
