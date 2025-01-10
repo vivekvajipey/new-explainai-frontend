@@ -17,7 +17,11 @@ interface ApprovedUser {
   last_login: string | null;
 }
 
-export async function uploadDocument(file: File, token: string | null | undefined): Promise<{ document_id: string }> {
+export async function uploadDocument(
+  file: File,
+  token: string | null | undefined,
+  pageRange?: string
+): Promise<{ document_id: string }> {
   const formData = new FormData();
   formData.append('file', file);
 
@@ -26,7 +30,12 @@ export async function uploadDocument(file: File, token: string | null | undefine
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/documents/upload/file`, {
+  const url = new URL(`${API_BASE_URL}/api/documents/upload/file`);
+  if (pageRange) {
+    url.searchParams.append('page_range', pageRange);
+  }
+
+  const response = await fetch(url.toString(), {
     method: 'POST',
     headers,
     body: formData,

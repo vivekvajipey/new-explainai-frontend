@@ -102,7 +102,7 @@ export default function Home() {
   });
 
   // Keep all your existing handlers exactly the same
-  const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>, pageRange?: string) => {
     const file = event.target.files?.[0];
     if (!file || !token) {
       if (!token) {
@@ -116,7 +116,7 @@ export default function Home() {
     setUploadSuccess(false);
     
     try {
-      const response = await uploadDocument(file, token);
+      const response = await uploadDocument(file, token, pageRange);
       const documentId = response.document_id;
       console.log('Upload successful, document ID:', documentId);
 

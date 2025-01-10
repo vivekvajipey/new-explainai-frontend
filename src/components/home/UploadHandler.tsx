@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 interface UploadHandlerProps {
-  onUpload: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
+  onUpload: (event: React.ChangeEvent<HTMLInputElement>, pageRange?: string) => Promise<void>;
   onUrlUpload: (url: string) => Promise<void>;
   isUploading: boolean;
 }
@@ -14,20 +14,55 @@ export function UploadHandler({
   const [url, setUrl] = useState('');
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPageRangeModal, setShowPageRangeModal] = useState(false);
+  const [pageRange, setPageRange] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pendingUploadEvent, setPendingUploadEvent] = useState<React.ChangeEvent<HTMLInputElement> | null>(null);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Check file size before uploading (10MB = 10 * 1024 * 1024 bytes)
-      if (file.size > 10 * 1024 * 1024) {
-        setError('File is too large. Please upload a smaller document (maximum size: 10MB).');
-        return;
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Check file size before proceeding
+    if (file.size > 10 * 1024 * 1024) {
+      setError('File is too large. Please upload a smaller document (maximum size: 10MB).');
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
       }
-      setError(null);
-      try {
-        await onUpload(e);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to upload file');
+      return;
+    }
+
+    setError(null);
+
+    // If it's a PDF, show the page range modal
+    if (file.type === 'application/pdf') {
+      setPendingUploadEvent(event);
+      setShowPageRangeModal(true);
+    } else {
+      // For non-PDF files, upload directly
+      handleUpload(event);
+    }
+  };
+
+  const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>, pageRange?: string) => {
+    try {
+      await onUpload(event, pageRange);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to upload file');
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handlePageRangeSubmit = async () => {
+    if (pendingUploadEvent) {
+      await handleUpload(pendingUploadEvent, pageRange);
+      setShowPageRangeModal(false);
+      setPageRange('');
+      setPendingUploadEvent(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
       }
     }
   };
@@ -56,10 +91,11 @@ export function UploadHandler({
       <div className="flex gap-2 w-full">
         <input
           type="file"
-          onChange={handleFileChange}
+          onChange={handleFileSelect}
           className="hidden"
           id="file-upload"
           accept=".pdf,.doc,.docx,.txt"
+          ref={fileInputRef}
         />
         <label
           htmlFor="file-upload"
@@ -176,6 +212,46 @@ export function UploadHandler({
             </button>
           </div>
         </form>
+      )}
+
+      {/* Page Range Modal */}
+      {showPageRangeModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full">
+            <h3 className="text-lg font-medium mb-4">Select Page Range</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Enter page range (e.g., 1-10). Use startpage-endpage format. Maximum 16 pages.
+              Leave empty to process first 8 pages.
+            </p>
+            <input
+              type="text"
+              value={pageRange}
+              onChange={(e) => setPageRange(e.target.value)}
+              placeholder="e.g., 1-10"
+              className="w-full px-3 py-2 border rounded-md mb-4 focus:outline-none focus:ring-2 focus:ring-input-focus"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setShowPageRangeModal(false);
+                  setPendingUploadEvent(null);
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                  }
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-md"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePageRangeSubmit}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md"
+              >
+                Upload
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
