@@ -175,6 +175,23 @@
   --shadow-normal: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
 }
 
+/* Resizable Panel Styles */
+[data-panel] {
+  @apply overflow-auto;
+}
+
+[data-panel-group] {
+  @apply overflow-hidden;
+}
+
+[data-panel-resize-handle] {
+  @apply touch-none select-none;
+}
+
+[data-panel-resize-handle]:hover [data-panel-resize-handle-line] {
+  @apply bg-gray-400;
+}
+
 /* Dark theme overrides */
 .dark {
   /* Base UI Colors */

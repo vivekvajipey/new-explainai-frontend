@@ -118,9 +118,27 @@ export function DocumentContent({
         className="prose max-w-none p-6 h-full highlighting-area"
         onMouseUp={handleTextSelection}
       >
-        <pre className="whitespace-pre-wrap font-palatino text-doc-text bg-transparent m-0 p-0">
+        <div className="text-doc-text bg-transparent m-0 p-0 font-serif leading-relaxed text-justify text-lg">
           {renderedContent}
-        </pre>
+          <style jsx global>{`
+            .text-doc-text {
+              text-align: justify;
+              hyphens: auto;
+              line-height: 1.8;
+              letter-spacing: -0.003em;
+            }
+            
+            .prose p {
+              margin: 1.5em 0;
+            }
+
+            @media (min-width: 768px) {
+              .text-doc-text {
+                font-size: 1.125rem;
+              }
+            }
+          `}</style>
+        </div>
       </div>
       <SelectionTooltip
         position={selection?.position ?? null}

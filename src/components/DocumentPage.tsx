@@ -11,6 +11,7 @@ import { Highlight } from '@/components/document/types'; // Import Highlight typ
 import { useGoogleAnalytics } from '@/hooks/useGoogleAnalytics'; // Import the new hook
 import Joyride from 'react-joyride';
 import { useTutorialTour } from '@/hooks/useTutorialTour';
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
 export function DocumentPage({ documentId }: { documentId: string }) {
   // Core document state
@@ -163,8 +164,12 @@ export function DocumentPage({ documentId }: { documentId: string }) {
         }}
         callback={handleTourCallback}
       />
-      <div className="flex h-screen">
-        <div className={`document-viewer transition-all duration-300 ${isConversationCollapsed ? 'w-full' : 'w-1/2'}`}>
+      <PanelGroup direction="horizontal" className="h-screen">
+        <Panel 
+          defaultSize={60} 
+          minSize={30}
+          className="document-viewer"
+        >
           <DocumentViewer
             chunk={currentChunk}
             highlights={currentHighlights}
@@ -177,11 +182,16 @@ export function DocumentPage({ documentId }: { documentId: string }) {
             isCollapsed={isConversationCollapsed}
             onToggleCollapse={() => setIsConversationCollapsed(!isConversationCollapsed)}
           />
-        </div>
-        <div
-          className={`transition-all duration-300 ${
-            isConversationCollapsed ? 'w-0 overflow-hidden' : 'w-1/2'
-          }`}
+        </Panel>
+
+        <PanelResizeHandle className="w-2 bg-gray-100 hover:bg-gray-200 transition-colors cursor-col-resize">
+          <div className="h-full w-0.5 mx-auto bg-gray-300" />
+        </PanelResizeHandle>
+
+        <Panel 
+          defaultSize={40} 
+          minSize={20}
+          className={isConversationCollapsed ? 'hidden' : ''}
         >
           <ConversationContainer
             documentId={documentId}
@@ -192,8 +202,8 @@ export function DocumentPage({ documentId }: { documentId: string }) {
             mainError={mainError}
             chunkConversations={chunkConversations}
           />
-        </div>
-      </div>
+        </Panel>
+      </PanelGroup>
     </>
   );
 }
