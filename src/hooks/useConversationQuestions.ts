@@ -6,9 +6,10 @@ import { Question } from '@/types/conversation'; // Import the Question interfac
 export function useConversationQuestions(
   conversationId: string,
   conversationType: 'main' | 'highlight',
-  chunkId?: string
+  chunkId: string
 ) {
   console.log('useConversationQuestions called with:', { conversationId, conversationType, chunkId });
+
   const { conversationSocket } = useSocket();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -20,7 +21,7 @@ export function useConversationQuestions(
     
     try {
       setIsLoading(true);
-      const questions = await conversationSocket.listQuestions(conversationId);
+      const questions = await conversationSocket.listQuestions(conversationId, chunkId);
       setQuestions(questions);
     } catch (err) {
       console.error('Failed to fetch questions:', err);
@@ -28,7 +29,7 @@ export function useConversationQuestions(
     } finally {
       setIsLoading(false);
     }
-  }, [conversationId, conversationSocket]);
+  }, [conversationId, conversationSocket, chunkId]);
 
   const regenerateQuestions = useCallback(async () => {
     if (!conversationSocket || !conversationId) return;
@@ -50,8 +51,13 @@ export function useConversationQuestions(
 
 
   useEffect(() => {
+    console.log('Triggering questions fetch:', { 
+      conversationId, 
+      chunkId, 
+      hasSocket: !!conversationSocket 
+    });
     fetchQuestions();
-  }, [fetchQuestions]);
+  }, [fetchQuestions, conversationId, chunkId, conversationSocket]);
 
   return {
     questions,

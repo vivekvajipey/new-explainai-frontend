@@ -95,7 +95,7 @@ export function DocumentPage({ documentId }: { documentId: string }) {
     if (!metadata || newIndex < 0 || newIndex >= metadata.chunks.length) return;
     trackEvent('Document', 'chunk_changed', `chunk_${newIndex}`);
     setCurrentChunkIndex(newIndex);
-  }, [metadata]);
+  }, [metadata, trackEvent]);;
 
   // Handle highlight creation
   const handleHighlightCreate = useCallback(async (
@@ -119,7 +119,7 @@ export function DocumentPage({ documentId }: { documentId: string }) {
       console.error('Failed to create highlight conversation:', error);
       setError('Failed to create highlight');
     }
-  }, [conversationSocket, currentChunkIndex]);
+  }, [conversationSocket, currentChunkIndex, trackEvent]);
 
   const handleHighlightClick = useCallback((conversationId: string) => {
     setIsConversationCollapsed(false);
@@ -130,7 +130,7 @@ export function DocumentPage({ documentId }: { documentId: string }) {
     // - Error handling
     // - Analytics/tracking
     // - Any UI feedback or side effects
-  }, []);
+  },  [trackEvent]);
 
   if (!mainConversationId) {
     return <div>Loading conversations...</div>;
