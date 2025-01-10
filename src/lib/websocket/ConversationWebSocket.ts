@@ -461,14 +461,11 @@ export class ConversationWebSocket {
   }
 
   async listQuestions(conversationId: string, chunkId: string): Promise<Question[]> {
-    console.log('Attempting to list questions:', { conversationId, chunkId });
     const response = await this.sendAndWait<{questions: Question[]}>(
       'conversation.questions.list',
       'conversation.questions.list.completed',
       { conversation_id: conversationId, chunk_id: chunkId}
     );
-    console.log('Received questions response:', response);
-    console.log('Number of questions:', response.questions.length);
     return response.questions;
   }
 

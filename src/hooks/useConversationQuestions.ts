@@ -8,7 +8,7 @@ export function useConversationQuestions(
   conversationType: 'main' | 'highlight',
   chunkId: string
 ) {
-  console.log('useConversationQuestions called with:', { conversationId, conversationType, chunkId });
+  
 
   const { conversationSocket } = useSocket();
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -51,11 +51,6 @@ export function useConversationQuestions(
 
 
   useEffect(() => {
-    console.log('Triggering questions fetch:', { 
-      conversationId, 
-      chunkId, 
-      hasSocket: !!conversationSocket 
-    });
     fetchQuestions();
   }, [fetchQuestions, conversationId, chunkId, conversationSocket]);
 
