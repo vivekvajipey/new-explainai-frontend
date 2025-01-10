@@ -1,5 +1,6 @@
 // Force Heroku URL in production, allow override in development only
-const isDevelopment = process.env.NODE_ENV === 'development';
+const NODE_ENV = "development";
+const isDevelopment = NODE_ENV === 'development';
 console.log('Environment:', process.env.NODE_ENV);
 console.log('API URL from env:', process.env.NEXT_PUBLIC_API_URL);
 console.log('Google Client ID from env:', process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
