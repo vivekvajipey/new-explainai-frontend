@@ -467,7 +467,8 @@ export class ConversationWebSocket {
       chunk_id: options.chunkId,
       count: options.count || 3
     };
-  
+    console.log('Sending questions request with data:', JSON.stringify(requestData, null, 2));
+
     const response = await this.sendAndWait<GenerateQuestionsCompleted>(
       'conversation.questions.generate',
       'conversation.questions.generate.completed',
@@ -477,11 +478,11 @@ export class ConversationWebSocket {
     return response.questions;
   }
 
-  async listQuestions(conversationId: string): Promise<Question[]> {
+  async listQuestions(conversationId: string, chunkId: string): Promise<Question[]> {
     const response = await this.sendAndWait<{questions: Question[]}>(
       'conversation.questions.list',
       'conversation.questions.list.completed',
-      { conversation_id: conversationId }
+      { conversation_id: conversationId, chunk_id: chunkId}
     );
     return response.questions;
   }
