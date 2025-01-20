@@ -358,35 +358,68 @@ export class ConversationWebSocket {
     }
   
     await this.waitForConnection();
-    let fullMessage = '';
     let isComplete = false;
-  
+    let lastTokenTime = Date.now();
+    const STREAMING_TIMEOUT = 30000; // 30 seconds
+    const INACTIVITY_TIMEOUT = 10000; // 10 seconds without tokens
+
     const tokenHandler = (data: { token: string; request_id?: string }) => {
-      console.log('Token received:', data.token);
-      if (!isComplete) {
-        fullMessage += data.token;
-        handlers.onToken(fullMessage);
-      }
+      handlers.onToken(data.token);
+      lastTokenTime = Date.now(); // Reset inactivity timer when token received
     };
-  
+
     this.onMessage('chat.token', tokenHandler);
-  
+
     try {
-      console.log("Full context: ", config.useFullContext);
-      const response = await this.sendAndWait<ConversationMessageSendCompleted>(
-        'conversation.message.send',
-        'conversation.message.send.completed',
-        {
+      const response = await new Promise<ConversationMessageSendCompleted>((resolve, reject) => {
+        const request_id = this.send('conversation.message.send', {
           conversation_id: conversationId,
           content,
           chunk_id: config.chunkId,
           conversation_type: config.type || 'main',
           question_id: config.questionId,
           use_full_context: config.useFullContext
-        }
-      );
-  
-      isComplete = true;
+        });
+
+        // Set up completion handler
+        const completionHandler = (response: ConversationMessageSendCompleted & { request_id?: string }) => {
+          if (response.request_id === request_id) {
+            isComplete = true;
+            resolve(response);
+          }
+        };
+
+        this.onMessage('conversation.message.completed', completionHandler);
+
+        // Error handler
+        const errorHandler = (error: WebSocketError) => {
+          if (error.request_id === request_id) {
+            reject(new Error(error.message || 'Failed to send message'));
+          }
+        };
+
+        this.onMessage('conversation.message.completed.error', errorHandler);
+
+        // Set up timeout checks
+        const checkTimeout = () => {
+          const now = Date.now();
+          const timeSinceStart = now - lastTokenTime;
+          const timeSinceLastToken = now - lastTokenTime;
+
+          if (isComplete) return;
+
+          if (timeSinceStart > STREAMING_TIMEOUT) {
+            reject(new Error('Streaming timeout exceeded'));
+          } else if (timeSinceLastToken > INACTIVITY_TIMEOUT) {
+            reject(new Error('No tokens received for too long'));
+          } else {
+            setTimeout(checkTimeout, 1000);
+          }
+        };
+
+        checkTimeout();
+      });
+
       handlers.onComplete();
       this.removeHandler('chat.token', tokenHandler);
       return response;
